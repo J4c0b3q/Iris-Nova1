@@ -10,6 +10,7 @@ class Config(commands.Cog):
         self.bot = bot
 
 
+
     @discord.app_commands.command(
         name="setup",
         description="Konfiguracja Iris dla serwera"
@@ -29,7 +30,7 @@ class Config(commands.Cog):
             )
         ]
     )
-    @commands.has_permissions(
+    @discord.app_commands.checks.has_permissions(
         administrator=True
     )
     async def setup(
@@ -37,6 +38,7 @@ class Config(commands.Cog):
         interaction: discord.Interaction,
         option: str
     ):
+
 
         conn = get_connection()
         cursor = conn.cursor()
@@ -147,6 +149,21 @@ class Config(commands.Cog):
 
 
 
+        log_channel = (
+            interaction.guild.get_channel(data[0])
+            if data[0]
+            else None
+        )
+
+
+        welcome_channel = (
+            interaction.guild.get_channel(data[1])
+            if data[1]
+            else None
+        )
+
+
+
         embed = discord.Embed(
             title="⚙️ Konfiguracja Iris",
             color=discord.Color.blue()
@@ -156,8 +173,8 @@ class Config(commands.Cog):
         embed.add_field(
             name="📝 Logi",
             value=(
-                f"<#{data[0]}>"
-                if data[0]
+                log_channel.mention
+                if log_channel
                 else "Nie ustawiono"
             ),
             inline=False
@@ -167,8 +184,8 @@ class Config(commands.Cog):
         embed.add_field(
             name="👋 Powitania",
             value=(
-                f"<#{data[1]}>"
-                if data[1]
+                welcome_channel.mention
+                if welcome_channel
                 else "Nie ustawiono"
             ),
             inline=False
@@ -179,6 +196,11 @@ class Config(commands.Cog):
             name="🔧 Prefix",
             value=data[2] or "!",
             inline=False
+        )
+
+
+        embed.set_footer(
+            text="🌙 Iris Nova"
         )
 
 

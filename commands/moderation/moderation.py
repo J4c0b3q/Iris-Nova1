@@ -17,7 +17,7 @@ class Moderation(commands.Cog):
     @discord.app_commands.describe(
         amount="Ilość wiadomości do usunięcia"
     )
-    @commands.has_permissions(
+    @discord.app_commands.checks.has_permissions(
         manage_messages=True
     )
     async def clear(
@@ -56,7 +56,7 @@ class Moderation(commands.Cog):
         member="Użytkownik do wyrzucenia",
         reason="Powód wyrzucenia"
     )
-    @commands.has_permissions(
+    @discord.app_commands.checks.has_permissions(
         kick_members=True
     )
     async def kick(
@@ -114,7 +114,7 @@ class Moderation(commands.Cog):
         member="Użytkownik do zbanowania",
         reason="Powód bana"
     )
-    @commands.has_permissions(
+    @discord.app_commands.checks.has_permissions(
         ban_members=True
     )
     async def ban(

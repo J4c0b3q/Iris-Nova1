@@ -20,7 +20,7 @@ class Warnings(commands.Cog):
         member="Użytkownik do ostrzeżenia",
         reason="Powód ostrzeżenia"
     )
-    @commands.has_permissions(
+    @discord.app_commands.checks.has_permissions(
         manage_messages=True
     )
     async def warn(

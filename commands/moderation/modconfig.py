@@ -10,31 +10,18 @@ class ModConfig(commands.Cog):
         self.bot = bot
 
 
+
     @discord.app_commands.command(
         name="modconfig",
-        description="Konfiguracja systemu moderacji Iris"
+        description="Konfiguruje automatyczne kary za ostrzeżenia"
     )
     @discord.app_commands.describe(
-        option="Opcja moderacji: timeout, kick lub ban",
+        option="Opcja: timeout, kick lub ban",
         value="Ilość ostrzeżeń"
     )
-    @discord.app_commands.choices(
-        option=[
-            discord.app_commands.Choice(
-                name="Timeout",
-                value="timeout"
-            ),
-            discord.app_commands.Choice(
-                name="Kick",
-                value="kick"
-            ),
-            discord.app_commands.Choice(
-                name="Ban",
-                value="ban"
-            )
-        ]
+    @discord.app_commands.checks.has_permissions(
+        administrator=True
     )
-    @commands.has_permissions(administrator=True)
     async def modconfig(
         self,
         interaction: discord.Interaction,
@@ -53,11 +40,29 @@ class ModConfig(commands.Cog):
             (guild_id)
             VALUES (?)
             """,
-            (interaction.guild.id,)
+            (
+                interaction.guild.id,
+            )
         )
 
 
-        if option and value:
+        if option and value is not None:
+
+
+            if option not in [
+                "timeout",
+                "kick",
+                "ban"
+            ]:
+
+                await interaction.response.send_message(
+                    "❌ Dostępne opcje: timeout, kick, ban",
+                    ephemeral=True
+                )
+
+                conn.close()
+                return
+
 
 
             if option == "timeout":
@@ -110,7 +115,7 @@ class ModConfig(commands.Cog):
 
 
             await interaction.response.send_message(
-                f"⚙️ Ustawiono **{option}**: `{value}` ostrzeżeń"
+                f"⚙️ Ustawiono `{option}` na `{value}` ostrzeżeń."
             )
 
             return
@@ -123,7 +128,9 @@ class ModConfig(commands.Cog):
             FROM moderation_settings
             WHERE guild_id = ?
             """,
-            (interaction.guild.id,)
+            (
+                interaction.guild.id,
+            )
         )
 
 
@@ -132,25 +139,40 @@ class ModConfig(commands.Cog):
         conn.close()
 
 
+        if not data:
+
+            data = (
+                3,
+                5,
+                10
+            )
+
+
+
         embed = discord.Embed(
-            title="🛡️ Moderacja Iris",
+            title="🛡️ Iris Nova — Moderacja",
             color=discord.Color.blue()
         )
 
 
         embed.add_field(
             name="🔇 Timeout",
-            value=f"{data[0]} ostrzeżeń"
+            value=f"{data[0]} ostrzeżeń",
+            inline=False
         )
+
 
         embed.add_field(
             name="👢 Kick",
-            value=f"{data[1]} ostrzeżeń"
+            value=f"{data[1]} ostrzeżeń",
+            inline=False
         )
+
 
         embed.add_field(
             name="🔨 Ban",
-            value=f"{data[2]} ostrzeżeń"
+            value=f"{data[2]} ostrzeżeń",
+            inline=False
         )
 
 
