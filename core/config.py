@@ -1,0 +1,13 @@
+BOT_NAME = "Iris"
+
+PREFIX = "!"
+
+VERSION = "1.0.0"
+
+OWNER_ID = 1525548792567431184
+
+SETTINGS = {
+    "AI_ENABLED": False,
+    "LOGGING_ENABLED": True,
+    "WELCOME_ENABLED": True
+}
