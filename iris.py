@@ -11,6 +11,7 @@ from core.personality import IRIS_PERSONALITY
 from core.config import PREFIX, BOT_NAME, VERSION
 from core.logger import log_info
 from core.database import init_database
+from core.loader import load_extensions
 
 load_dotenv()
 
@@ -71,23 +72,9 @@ async def on_ready():
 async def main():
     init_database()
     async with bot:
-        await bot.load_extension("commands.basic")
-        await bot.load_extension("commands.iris_ai")
-        await bot.load_extension("commands.welcome")
-        await bot.load_extension("commands.moderation")
-        await bot.load_extension("commands.errors")
-        await bot.load_extension("commands.owner")
-        await bot.load_extension("commands.status")
-        await bot.load_extension("commands.help")
-        await bot.load_extension("commands.discord_logs")
-        await bot.load_extension("commands.config")
-        await bot.load_extension("commands.warnings")
-        await bot.load_extension("commands.modconfig")
-        await bot.load_extension("commands.slash_system")
-    
+
+        await load_extensions(bot)
         
-
-
         await bot.start(TOKEN)
         
 

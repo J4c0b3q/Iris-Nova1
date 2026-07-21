@@ -174,3 +174,9 @@ discord.app_commands.errors.CommandNotFound: Application command 'ping' not foun
 2026-07-21 17:56:03,094 | WARNING | PyNaCl is not installed, voice will NOT be supported
 2026-07-21 17:56:03,095 | WARNING | davey is not installed, voice will NOT be supported
 2026-07-21 17:56:07,162 | INFO | logging in using static token
+2026-07-21 18:37:51,932 | WARNING | PyNaCl is not installed, voice will NOT be supported
+2026-07-21 18:37:51,934 | WARNING | davey is not installed, voice will NOT be supported
+2026-07-21 18:37:57,909 | INFO | logging in using static token
+2026-07-21 18:37:59,051 | INFO | Shard ID None has connected to Gateway (Session ID: 190b62979993d335636d9bf2a9981f43).
+2026-07-21 18:38:01,273 | INFO | Bot uruchomiony jako Iris Nova#6933
+2026-07-21 18:38:36,963 | INFO | _.bl4ck0ut._ sprawdzi³ status Iris
