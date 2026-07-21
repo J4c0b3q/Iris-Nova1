@@ -2,7 +2,7 @@ from discord.ext import commands
 
 from core.config import BOT_NAME, VERSION
 from core.logger import log_info
-from core.stats import get_uptime
+
 
 class Ready(commands.Cog):
 
@@ -13,9 +13,25 @@ class Ready(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
 
+        try:
+
+            synced = await self.bot.tree.sync()
+
+            print(
+                f"🌙 Zsynchronizowano {len(synced)} slash commands"
+            )
+
+        except Exception as e:
+
+            print(
+                f"❌ Błąd synchronizacji slash: {e}"
+            )
+
+
         print(
             f"{BOT_NAME} v{VERSION} działa jako {self.bot.user}"
         )
+
 
         log_info(
             f"Bot uruchomiony jako {self.bot.user}"

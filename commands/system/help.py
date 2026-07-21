@@ -8,57 +8,154 @@ class Help(commands.Cog):
         self.bot = bot
 
 
-    @commands.command(name="help")
-    async def help_command(self, ctx):
+    @discord.app_commands.command(
+        name="help",
+        description="Pokazuje wszystkie dostępne komendy Iris"
+    )
+    async def help_command(
+        self,
+        interaction: discord.Interaction
+    ):
 
         embed = discord.Embed(
             title="🌙 Iris Nova — Pomoc",
-            description="Automatycznie wygenerowana lista komend:",
+            description="Lista dostępnych slash commands:",
             color=discord.Color.blue()
         )
 
 
-        commands_list = []
+        moderation = []
+        configuration = []
+        information = []
+        owner = []
+        system = []
+        other = []
 
 
-        for command in self.bot.commands:
+        commands_list = self.bot.tree.get_commands()
 
-            if command.hidden:
-                continue
+
+        for command in commands_list:
+
+            name = f"`/{command.name}`"
+
 
             if command.name == "help":
                 continue
 
-            commands_list.append(
-                f"`!{command.name}`"
-            )
+
+            if command.name in [
+                "kick",
+                "ban",
+                "clear",
+                "warn",
+                "warnings"
+            ]:
+                moderation.append(name)
 
 
-        if commands_list:
+            elif command.name in [
+                "setup",
+                "config",
+                "modconfig"
+            ]:
+                configuration.append(name)
+
+
+            elif command.name in [
+                "stats",
+                "status"
+            ]:
+                information.append(name)
+
+
+            elif command.name in [
+                "reload"
+            ]:
+                owner.append(name)
+
+
+            elif command.name in [
+                "ping"
+            ]:
+                system.append(name)
+
+
+            else:
+                other.append(name)
+
+
+
+        if moderation:
 
             embed.add_field(
-                name="🤖 Dostępne komendy",
-                value="\n".join(commands_list),
+                name="🛡️ Moderacja",
+                value="\n".join(moderation),
                 inline=False
             )
 
-        else:
+
+        if configuration:
 
             embed.add_field(
-                name="Brak komend",
-                value="Nie znaleziono komend."
+                name="⚙️ Konfiguracja",
+                value="\n".join(configuration),
+                inline=False
             )
 
 
+        if information:
+
+            embed.add_field(
+                name="📊 Informacje",
+                value="\n".join(information),
+                inline=False
+            )
+
+
+        if owner:
+
+            embed.add_field(
+                name="👑 Owner",
+                value="\n".join(owner),
+                inline=False
+            )
+
+
+        if system:
+
+            embed.add_field(
+                name="🤖 System",
+                value="\n".join(system),
+                inline=False
+            )
+
+
+        if other:
+
+            embed.add_field(
+                name="🔧 Inne",
+                value="\n".join(other),
+                inline=False
+            )
+
+
+        total = len(commands_list) - 1
+
+
         embed.set_footer(
-            text=f"Iris Nova • {len(commands_list)} komend"
+            text=f"Iris Nova • {total} komend"
         )
 
 
-        await ctx.send(
+        await interaction.response.send_message(
             embed=embed
         )
 
 
+
 async def setup(bot):
-    await bot.add_cog(Help(bot))
+
+    await bot.add_cog(
+        Help(bot)
+    )

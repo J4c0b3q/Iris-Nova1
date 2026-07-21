@@ -1,4 +1,6 @@
+import discord
 from discord.ext import commands
+
 from core.database import get_connection
 
 
@@ -8,9 +10,38 @@ class ModConfig(commands.Cog):
         self.bot = bot
 
 
-    @commands.command()
+    @discord.app_commands.command(
+        name="modconfig",
+        description="Konfiguracja systemu moderacji Iris"
+    )
+    @discord.app_commands.describe(
+        option="Opcja moderacji: timeout, kick lub ban",
+        value="Ilość ostrzeżeń"
+    )
+    @discord.app_commands.choices(
+        option=[
+            discord.app_commands.Choice(
+                name="Timeout",
+                value="timeout"
+            ),
+            discord.app_commands.Choice(
+                name="Kick",
+                value="kick"
+            ),
+            discord.app_commands.Choice(
+                name="Ban",
+                value="ban"
+            )
+        ]
+    )
     @commands.has_permissions(administrator=True)
-    async def modconfig(self, ctx, option=None, value=None):
+    async def modconfig(
+        self,
+        interaction: discord.Interaction,
+        option: str = None,
+        value: int = None
+    ):
+
 
         conn = get_connection()
         cursor = conn.cursor()
@@ -22,40 +53,55 @@ class ModConfig(commands.Cog):
             (guild_id)
             VALUES (?)
             """,
-            (ctx.guild.id,)
+            (interaction.guild.id,)
         )
 
 
         if option and value:
 
+
             if option == "timeout":
+
                 cursor.execute(
                     """
                     UPDATE moderation_settings
                     SET timeout_warns = ?
                     WHERE guild_id = ?
                     """,
-                    (int(value), ctx.guild.id)
+                    (
+                        value,
+                        interaction.guild.id
+                    )
                 )
 
+
             elif option == "kick":
+
                 cursor.execute(
                     """
                     UPDATE moderation_settings
                     SET kick_warns = ?
                     WHERE guild_id = ?
                     """,
-                    (int(value), ctx.guild.id)
+                    (
+                        value,
+                        interaction.guild.id
+                    )
                 )
 
+
             elif option == "ban":
+
                 cursor.execute(
                     """
                     UPDATE moderation_settings
                     SET ban_warns = ?
                     WHERE guild_id = ?
                     """,
-                    (int(value), ctx.guild.id)
+                    (
+                        value,
+                        interaction.guild.id
+                    )
                 )
 
 
@@ -63,9 +109,10 @@ class ModConfig(commands.Cog):
             conn.close()
 
 
-            await ctx.send(
-                f"⚙️ Ustawiono {option}: {value} ostrzeżeń"
+            await interaction.response.send_message(
+                f"⚙️ Ustawiono **{option}**: `{value}` ostrzeżeń"
             )
+
             return
 
 
@@ -76,7 +123,7 @@ class ModConfig(commands.Cog):
             FROM moderation_settings
             WHERE guild_id = ?
             """,
-            (ctx.guild.id,)
+            (interaction.guild.id,)
         )
 
 
@@ -85,21 +132,36 @@ class ModConfig(commands.Cog):
         conn.close()
 
 
-        await ctx.send(
-            f"""
-🛡️ **Moderacja Iris**
-
-🔇 Timeout:
-`{data[0]}` ostrzeżeń
-
-👢 Kick:
-`{data[1]}` ostrzeżeń
-
-🔨 Ban:
-`{data[2]}` ostrzeżeń
-"""
+        embed = discord.Embed(
+            title="🛡️ Moderacja Iris",
+            color=discord.Color.blue()
         )
 
 
+        embed.add_field(
+            name="🔇 Timeout",
+            value=f"{data[0]} ostrzeżeń"
+        )
+
+        embed.add_field(
+            name="👢 Kick",
+            value=f"{data[1]} ostrzeżeń"
+        )
+
+        embed.add_field(
+            name="🔨 Ban",
+            value=f"{data[2]} ostrzeżeń"
+        )
+
+
+        await interaction.response.send_message(
+            embed=embed
+        )
+
+
+
 async def setup(bot):
-    await bot.add_cog(ModConfig(bot))
+
+    await bot.add_cog(
+        ModConfig(bot)
+    )

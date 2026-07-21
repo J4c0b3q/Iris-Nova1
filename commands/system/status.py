@@ -1,6 +1,8 @@
+import discord
 from discord.ext import commands
-from discord import Activity, ActivityType
+
 from core.config import BOT_NAME, VERSION, SETTINGS
+
 import time
 
 
@@ -15,26 +17,38 @@ class Status(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+
         await self.bot.change_presence(
-            activity=Activity(
-                type=ActivityType.playing,
-                name=f"!help | {BOT_NAME}"
+            activity=discord.Game(
+                name=f"/help | {BOT_NAME}"
             )
         )
 
 
-    @commands.command()
-    async def irisinfo(self, ctx):
+    @discord.app_commands.command(
+        name="status",
+        description="Pokazuje status Iris"
+    )
+    async def status(
+        self,
+        interaction: discord.Interaction
+    ):
 
-        uptime = int(time.time() - start_time)
+
+        uptime = int(
+            time.time() - start_time
+        )
+
 
         hours = uptime // 3600
         minutes = (uptime % 3600) // 60
+
 
         members = sum(
             g.member_count or 0
             for g in self.bot.guilds
         )
+
 
         ai_status = (
             "🟢 ON"
@@ -42,29 +56,63 @@ class Status(commands.Cog):
             else "🔴 OFF"
         )
 
-        await ctx.send(
-            f"""
-🌙 **{BOT_NAME}**
 
-🟢 Status: Online
-
-⏱️ Czas działania:
-{hours}h {minutes}m
-
-🌐 Serwery:
-{len(self.bot.guilds)}
-
-👥 Użytkownicy:
-{members}
-
-🧠 AI:
-{ai_status}
-
-⚙️ Wersja:
-{VERSION}
-"""
+        embed = discord.Embed(
+            title=f"🌙 {BOT_NAME}",
+            color=discord.Color.green()
         )
 
 
+        embed.add_field(
+            name="🟢 Status",
+            value="Online",
+            inline=False
+        )
+
+
+        embed.add_field(
+            name="⏱️ Czas działania",
+            value=f"{hours}h {minutes}m",
+            inline=True
+        )
+
+
+        embed.add_field(
+            name="🌐 Serwery",
+            value=str(len(self.bot.guilds)),
+            inline=True
+        )
+
+
+        embed.add_field(
+            name="👥 Użytkownicy",
+            value=str(members),
+            inline=True
+        )
+
+
+        embed.add_field(
+            name="🧠 AI",
+            value=ai_status,
+            inline=True
+        )
+
+
+        embed.add_field(
+            name="⚙️ Wersja",
+            value=VERSION,
+            inline=True
+        )
+
+
+        await interaction.response.send_message(
+            embed=embed
+        )
+
+
+
 async def setup(bot):
-    await bot.add_cog(Status(bot))
+
+    await bot.add_cog(
+        Status(bot)
+    )

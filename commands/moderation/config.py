@@ -1,4 +1,6 @@
+import discord
 from discord.ext import commands
+
 from core.database import get_connection
 
 
@@ -8,9 +10,33 @@ class Config(commands.Cog):
         self.bot = bot
 
 
-    @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def setup(self, ctx, option):
+    @discord.app_commands.command(
+        name="setup",
+        description="Konfiguracja Iris dla serwera"
+    )
+    @discord.app_commands.describe(
+        option="Co chcesz skonfigurować"
+    )
+    @discord.app_commands.choices(
+        option=[
+            discord.app_commands.Choice(
+                name="Kanał logów",
+                value="logs"
+            ),
+            discord.app_commands.Choice(
+                name="Kanał powitań",
+                value="welcome"
+            )
+        ]
+    )
+    @commands.has_permissions(
+        administrator=True
+    )
+    async def setup(
+        self,
+        interaction: discord.Interaction,
+        option: str
+    ):
 
         conn = get_connection()
         cursor = conn.cursor()
@@ -18,10 +44,13 @@ class Config(commands.Cog):
 
         cursor.execute(
             """
-            INSERT OR IGNORE INTO guilds (guild_id)
+            INSERT OR IGNORE INTO guilds
+            (guild_id)
             VALUES (?)
             """,
-            (ctx.guild.id,)
+            (
+                interaction.guild.id,
+            )
         )
 
 
@@ -34,13 +63,15 @@ class Config(commands.Cog):
                 WHERE guild_id = ?
                 """,
                 (
-                    ctx.channel.id,
-                    ctx.guild.id
+                    interaction.channel.id,
+                    interaction.guild.id
                 )
             )
 
-            await ctx.send(
-                f"✅ Kanał logów ustawiony: {ctx.channel.mention}"
+
+            message = (
+                f"✅ Kanał logów ustawiony: "
+                f"{interaction.channel.mention}"
             )
 
 
@@ -53,13 +84,15 @@ class Config(commands.Cog):
                 WHERE guild_id = ?
                 """,
                 (
-                    ctx.channel.id,
-                    ctx.guild.id
+                    interaction.channel.id,
+                    interaction.guild.id
                 )
             )
 
-            await ctx.send(
-                f"✅ Kanał powitań ustawiony: {ctx.channel.mention}"
+
+            message = (
+                f"✅ Kanał powitań ustawiony: "
+                f"{interaction.channel.mention}"
             )
 
 
@@ -67,9 +100,21 @@ class Config(commands.Cog):
         conn.close()
 
 
+        await interaction.response.send_message(
+            message
+        )
 
-    @commands.command()
-    async def config(self, ctx):
+
+
+    @discord.app_commands.command(
+        name="config",
+        description="Pokazuje konfigurację Iris"
+    )
+    async def config(
+        self,
+        interaction: discord.Interaction
+    ):
+
 
         conn = get_connection()
         cursor = conn.cursor()
@@ -81,7 +126,9 @@ class Config(commands.Cog):
             FROM guilds
             WHERE guild_id = ?
             """,
-            (ctx.guild.id,)
+            (
+                interaction.guild.id,
+            )
         )
 
 
@@ -91,27 +138,58 @@ class Config(commands.Cog):
 
 
         if not data:
-            await ctx.send(
+
+            await interaction.response.send_message(
                 "⚠️ Ten serwer nie ma jeszcze konfiguracji."
             )
+
             return
 
 
-        await ctx.send(
-            f"""
-⚙️ **Konfiguracja Iris**
 
-📝 Logi:
-`{data[0]}`
-
-👋 Powitania:
-`{data[1]}`
-
-🔧 Prefix:
-`{data[2]}`
-"""
+        embed = discord.Embed(
+            title="⚙️ Konfiguracja Iris",
+            color=discord.Color.blue()
         )
 
 
+        embed.add_field(
+            name="📝 Logi",
+            value=(
+                f"<#{data[0]}>"
+                if data[0]
+                else "Nie ustawiono"
+            ),
+            inline=False
+        )
+
+
+        embed.add_field(
+            name="👋 Powitania",
+            value=(
+                f"<#{data[1]}>"
+                if data[1]
+                else "Nie ustawiono"
+            ),
+            inline=False
+        )
+
+
+        embed.add_field(
+            name="🔧 Prefix",
+            value=data[2] or "!",
+            inline=False
+        )
+
+
+        await interaction.response.send_message(
+            embed=embed
+        )
+
+
+
 async def setup(bot):
-    await bot.add_cog(Config(bot))
+
+    await bot.add_cog(
+        Config(bot)
+    )
