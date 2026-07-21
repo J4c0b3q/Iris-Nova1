@@ -2,7 +2,7 @@ from discord.ext import commands
 
 from core.config import BOT_NAME, VERSION
 from core.logger import log_info
-
+from core.stats import get_uptime
 
 class Ready(commands.Cog):
 
