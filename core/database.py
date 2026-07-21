@@ -49,10 +49,16 @@ def add_column_if_missing(
 
 def init_database():
 
+    print("📦 Inicjalizacja bazy danych...")
+
     conn = get_connection()
     cursor = conn.cursor()
 
 
+
+    # ==========================
+    # SERWERY
+    # ==========================
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS guilds (
@@ -70,7 +76,7 @@ def init_database():
 
 
 
-    # nowe kanały logów
+    # dodatkowe kanały logów
 
     add_column_if_missing(
         cursor,
@@ -97,6 +103,10 @@ def init_database():
 
 
 
+    # ==========================
+    # WARNY
+    # ==========================
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS warnings (
 
@@ -117,6 +127,10 @@ def init_database():
 
 
 
+    # ==========================
+    # USTAWIENIA MODERACJI
+    # ==========================
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS moderation_settings (
 
@@ -133,5 +147,66 @@ def init_database():
 
 
 
+    # ==========================
+    # AUTOMOD
+    # ==========================
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS automod_settings (
+
+        guild_id INTEGER PRIMARY KEY,
+
+        anti_spam INTEGER DEFAULT 1,
+
+        anti_links INTEGER DEFAULT 1,
+
+        anti_caps INTEGER DEFAULT 1
+
+    )
+    """)
+
+
+
+    # ==========================
+    # WHITELISTA AUTOMODA
+    # ==========================
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS automod_whitelist (
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        guild_id INTEGER,
+
+        user_id INTEGER,
+
+        role_id INTEGER
+
+    )
+    """)
+
+
+
+    # ==========================
+    # ZAKAZANE SŁOWA
+    # ==========================
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS bad_words (
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        guild_id INTEGER,
+
+        word TEXT
+
+    )
+    """)
+
+
+
     conn.commit()
     conn.close()
+
+
+    print("✅ Baza danych gotowa")
