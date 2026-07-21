@@ -1,42 +1,34 @@
-import sqlite3
 import os
+import sqlite3
+from pathlib import Path
+
+from core.logger import get_logger
+
+logger = get_logger(__name__)
+
+DATA_DIR = Path("data")
+DATA_DIR.mkdir(exist_ok=True)
+
+DB_PATH = DATA_DIR / "iris.db"
 
 
-DB_PATH = "data/iris.db"
-
-
-
-def get_connection():
-
-    os.makedirs(
-        "data",
-        exist_ok=True
-    )
-
-    return sqlite3.connect(
-        DB_PATH
-    )
-
+def get_connection() -> sqlite3.Connection:
+    return sqlite3.connect(DB_PATH)
 
 
 def add_column_if_missing(
-    cursor,
-    table,
-    column,
-    column_type
-):
+    cursor: sqlite3.Cursor,
+    table: str,
+    column: str,
+    column_type: str,
+) -> None:
 
-    cursor.execute(
-        f"PRAGMA table_info({table})"
-    )
+    cursor.execute(f"PRAGMA table_info({table})")
 
-    columns = [
-        row[1]
-        for row in cursor.fetchall()
-    ]
-
+    columns = [row[1] for row in cursor.fetchall()]
 
     if column not in columns:
+        logger.info(f"Adding column '{column}' to table '{table}'")
 
         cursor.execute(
             f"""
@@ -46,18 +38,15 @@ def add_column_if_missing(
         )
 
 
+def init_database() -> sqlite3.Connection:
 
-def init_database():
-
-    print("📦 Inicjalizacja bazy danych...")
+    logger.info("Initializing database...")
 
     conn = get_connection()
     cursor = conn.cursor()
 
-
-
     # ==========================
-    # SERWERY
+    # GUILDS
     # ==========================
 
     cursor.execute("""
@@ -74,37 +63,29 @@ def init_database():
     )
     """)
 
-
-
-    # dodatkowe kanały logów
-
     add_column_if_missing(
         cursor,
         "guilds",
         "member_log_channel",
-        "INTEGER"
+        "INTEGER",
     )
-
 
     add_column_if_missing(
         cursor,
         "guilds",
         "moderation_log_channel",
-        "INTEGER"
+        "INTEGER",
     )
-
 
     add_column_if_missing(
         cursor,
         "guilds",
         "message_log_channel",
-        "INTEGER"
+        "INTEGER",
     )
 
-
-
     # ==========================
-    # WARNY
+    # WARNINGS
     # ==========================
 
     cursor.execute("""
@@ -125,10 +106,8 @@ def init_database():
     )
     """)
 
-
-
     # ==========================
-    # USTAWIENIA MODERACJI
+    # MODERATION
     # ==========================
 
     cursor.execute("""
@@ -144,8 +123,6 @@ def init_database():
 
     )
     """)
-
-
 
     # ==========================
     # AUTOMOD
@@ -165,10 +142,8 @@ def init_database():
     )
     """)
 
-
-
     # ==========================
-    # WHITELISTA AUTOMODA
+    # AUTOMOD WHITELIST
     # ==========================
 
     cursor.execute("""
@@ -185,10 +160,8 @@ def init_database():
     )
     """)
 
-
-
     # ==========================
-    # ZAKAZANE SŁOWA
+    # BAD WORDS
     # ==========================
 
     cursor.execute("""
@@ -203,10 +176,8 @@ def init_database():
     )
     """)
 
-
-
     conn.commit()
-    conn.close()
 
+    logger.info("Database initialized successfully.")
 
-    print("✅ Baza danych gotowa")
+    return conn

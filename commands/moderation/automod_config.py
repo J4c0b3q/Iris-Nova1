@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-from core.database import get_connection
+from database.database import get_connection
 
 
 class AutoModConfig(commands.Cog):

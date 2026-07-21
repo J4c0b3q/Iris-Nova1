@@ -1,115 +1,51 @@
-print("🌙 Start Iris Nova")
-
+import asyncio
 
 import discord
 from discord.ext import commands
 
-from dotenv import load_dotenv
-
-import os
-import asyncio
-
-
-from core.config import (
-    PREFIX,
-    BOT_NAME,
-    VERSION
-)
-
-from core.logger import log_info
-from core.database import init_database
+from core.config import BOT_NAME, PREFIX, VERSION
+from database.database import init_database
+from core.env import Env
 from core.loader import load_extensions
+from core.logger import get_logger
 
+logger = get_logger("Iris")
 
+from core.bot import IrisBot
 
-load_dotenv()
-
-
-TOKEN = os.getenv(
-    "DISCORD_TOKEN"
-)
-
-
-
-if not TOKEN:
-
-    raise Exception(
-        "❌ Brak DISCORD_TOKEN w pliku .env"
-    )
-
-
-
-intents = discord.Intents.all()
-
-
-
-bot = commands.Bot(
-    command_prefix=PREFIX,
-    intents=intents,
-    help_command=None
-)
-
+bot = IrisBot()
 
 
 @bot.event
 async def on_ready():
-
-    print(
-        f"🌙 {BOT_NAME} v{VERSION}"
-        f" online jako {bot.user}"
-    )
-
-    log_info(
-        f"{BOT_NAME} uruchomiony jako {bot.user}"
-    )
-
+    logger.info("=" * 60)
+    logger.info(f"{BOT_NAME} v{VERSION}")
+    logger.info(f"Logged in as: {bot.user} ({bot.user.id})")
+    logger.info(f"Guilds: {len(bot.guilds)}")
+    logger.info("=" * 60)
 
 
 async def main():
+    logger.info("Starting Iris...")
 
-
-    print(
-        "📦 Inicjalizacja bazy danych..."
-    )
-
-
+    logger.info("Initializing database...")
     init_database()
 
-
-
-    print(
-        "🔌 Ładowanie modułów..."
-    )
-
-
+    logger.info("Loading extensions...")
+    
     async with bot:
-
-
         await load_extensions(bot)
 
-
-        print(
-            "🚀 Łączenie z Discord..."
-        )
-
-
-        await bot.start(
-            TOKEN
-        )
-
+        logger.info("Connecting to Discord...")
+        await bot.start(Env.DISCORD_TOKEN)
 
 
 if __name__ == "__main__":
-
     try:
-
-        asyncio.run(
-            main()
-        )
-
+        asyncio.run(main())
 
     except KeyboardInterrupt:
+        logger.warning("Bot stopped by user (KeyboardInterrupt).")
 
-        print(
-            "🛑 Iris zatrzymany"
-        )
+    except Exception:
+        logger.exception("Fatal error while starting Iris.")

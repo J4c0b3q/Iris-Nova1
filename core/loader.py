@@ -1,57 +1,50 @@
-import os
+import time
+from pathlib import Path
+
+from core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 async def load_extensions(bot):
+    commands_dir = Path("commands")
 
-    loaded = 0
-    failed = 0
+    bot.loaded_modules = 0
+    bot.failed_modules = 0
 
-    folders = [
-        "commands",
-        "events"
-    ]
+    start = time.perf_counter()
 
-    for folder in folders:
+    for file in commands_dir.rglob("*.py"):
 
-        if not os.path.exists(folder):
+        if file.name.startswith("_"):
             continue
 
-        for root, dirs, files in os.walk(folder):
+        if file.name == "__init__.py":
+            continue
 
-            for file in files:
+        module = ".".join(file.with_suffix("").parts)
 
-                if (
-                    file.endswith(".py")
-                    and not file.startswith("__")
-                ):
+        try:
+            module_start = time.perf_counter()
 
-                    path = os.path.join(root, file)
+            await bot.load_extension(module)
 
-                    module = (
-                        path
-                        .replace("\\", ".")
-                        .replace("/", ".")[:-3]
-                    )
+            elapsed = time.perf_counter() - module_start
 
-                    try:
-                        await bot.load_extension(module)
+            bot.loaded_modules += 1
 
-                        print(
-                            f"✅ Załadowano: {module}"
-                        )
+            logger.info(f"✓ {module} ({elapsed:.2f}s)")
 
-                        loaded += 1
+        except Exception:
 
+            bot.failed_modules += 1
 
-                    except Exception as e:
+            logger.exception(f"✗ {module}")
 
-                        print(
-                            f"❌ Błąd {module}: {e}"
-                        )
+    total = time.perf_counter() - start
 
-                        failed += 1
-
-
-    print(
-        f"🌙 Moduły: {loaded} załadowane | {failed} błędów"
-    )
+    logger.info("=" * 60)
+    logger.info(f"Loaded: {bot.loaded_modules}")
+    logger.info(f"Failed: {bot.failed_modules}")
+    logger.info(f"Time: {total:.2f}s")
+    logger.info("=" * 60)

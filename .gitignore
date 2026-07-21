@@ -20,3 +20,6 @@ __pycache__/
 
 # Windows
 Thumbs.db
+
+logs/*.log
+logs/*.log.*

@@ -1,24 +1,22 @@
-# ==========================
-# Iris Nova Configuration
-# ==========================
-
+"""
+Global configuration for Iris.
+Tutaj NIE przechowujemy sekretów.
+"""
 
 BOT_NAME = "Iris"
-
+VERSION = "1.0.0"
 PREFIX = "!"
 
-VERSION = "1.0.0"
-
-
-OWNER_ID = 1525548792567431184
-
-
 SETTINGS = {
-
     "AI_ENABLED": False,
-
     "LOGGING_ENABLED": True,
+    "WELCOME_ENABLED": True,
+}
 
-    "WELCOME_ENABLED": True
-
+MODULES = {
+    "AI": True,
+    "MODERATION": True,
+    "OWNER": True,
+    "SYSTEM": True,
+    "UTILITY": True,
 }

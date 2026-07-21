@@ -3,7 +3,7 @@ from discord.ext import commands
 import datetime
 import time
 
-from core.database import get_connection
+from database.database import get_connection
 
 
 class AutoMod(commands.Cog):
