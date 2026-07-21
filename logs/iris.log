@@ -180,3 +180,8 @@ discord.app_commands.errors.CommandNotFound: Application command 'ping' not foun
 2026-07-21 18:37:59,051 | INFO | Shard ID None has connected to Gateway (Session ID: 190b62979993d335636d9bf2a9981f43).
 2026-07-21 18:38:01,273 | INFO | Bot uruchomiony jako Iris Nova#6933
 2026-07-21 18:38:36,963 | INFO | _.bl4ck0ut._ sprawdzi³ status Iris
+2026-07-21 18:40:34,575 | WARNING | PyNaCl is not installed, voice will NOT be supported
+2026-07-21 18:40:34,576 | WARNING | davey is not installed, voice will NOT be supported
+2026-07-21 18:40:38,546 | INFO | logging in using static token
+2026-07-21 18:40:42,286 | INFO | Shard ID None has connected to Gateway (Session ID: f864e87e74d17f10b81b4806ca4a79dd).
+2026-07-21 18:40:44,527 | INFO | Bot uruchomiony jako Iris Nova#6933
