@@ -6,39 +6,50 @@ async def load_extensions(bot):
     loaded = 0
     failed = 0
 
-    for root, dirs, files in os.walk("commands"):
+    folders = [
+        "commands",
+        "events"
+    ]
 
-        for file in files:
+    for folder in folders:
 
-            if (
-                file.endswith(".py")
-                and not file.startswith("__")
-            ):
+        if not os.path.exists(folder):
+            continue
 
-                path = os.path.join(root, file)
+        for root, dirs, files in os.walk(folder):
 
-                module = (
-                    path
-                    .replace("\\", ".")
-                    .replace("/", ".")[:-3]
-                )
+            for file in files:
 
-                try:
-                    await bot.load_extension(module)
+                if (
+                    file.endswith(".py")
+                    and not file.startswith("__")
+                ):
 
-                    print(
-                        f"✅ Załadowano: {module}"
+                    path = os.path.join(root, file)
+
+                    module = (
+                        path
+                        .replace("\\", ".")
+                        .replace("/", ".")[:-3]
                     )
 
-                    loaded += 1
+                    try:
+                        await bot.load_extension(module)
 
-                except Exception as e:
+                        print(
+                            f"✅ Załadowano: {module}"
+                        )
 
-                    print(
-                        f"❌ Błąd {module}: {e}"
-                    )
+                        loaded += 1
 
-                    failed += 1
+
+                    except Exception as e:
+
+                        print(
+                            f"❌ Błąd {module}: {e}"
+                        )
+
+                        failed += 1
 
 
     print(

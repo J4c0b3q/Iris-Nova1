@@ -195,3 +195,22 @@ discord.app_commands.errors.CommandNotFound: Application command 'ping' not foun
 2026-07-21 18:49:30,454 | INFO | logging in using static token
 2026-07-21 18:49:31,666 | INFO | Shard ID None has connected to Gateway (Session ID: e2cb3f45285c176de699741c3b44019f).
 2026-07-21 18:49:33,933 | INFO | Bot uruchomiony jako Iris Nova#6933
+2026-07-21 18:51:28,818 | WARNING | PyNaCl is not installed, voice will NOT be supported
+2026-07-21 18:51:28,819 | WARNING | davey is not installed, voice will NOT be supported
+2026-07-21 18:51:33,948 | INFO | logging in using static token
+2026-07-21 18:51:35,204 | INFO | Shard ID None has connected to Gateway (Session ID: 1ade5208ff4d128473de2247a993d194).
+2026-07-21 18:51:37,570 | INFO | Bot uruchomiony jako Iris Nova#6933
+2026-07-21 18:56:35,489 | WARNING | PyNaCl is not installed, voice will NOT be supported
+2026-07-21 18:56:35,491 | WARNING | davey is not installed, voice will NOT be supported
+2026-07-21 18:57:22,664 | WARNING | PyNaCl is not installed, voice will NOT be supported
+2026-07-21 18:57:22,664 | WARNING | davey is not installed, voice will NOT be supported
+2026-07-21 18:58:52,147 | WARNING | PyNaCl is not installed, voice will NOT be supported
+2026-07-21 18:58:52,148 | WARNING | davey is not installed, voice will NOT be supported
+2026-07-21 18:58:56,731 | INFO | logging in using static token
+2026-07-21 18:58:57,951 | INFO | Shard ID None has connected to Gateway (Session ID: ea688a6a3a5df9cf2426e1cdb4373565).
+2026-07-21 18:58:59,981 | INFO | Bot uruchomiony jako Iris Nova#6933
+2026-07-21 18:59:17,061 | WARNING | PyNaCl is not installed, voice will NOT be supported
+2026-07-21 18:59:17,062 | WARNING | davey is not installed, voice will NOT be supported
+2026-07-21 18:59:20,290 | INFO | logging in using static token
+2026-07-21 18:59:22,126 | INFO | Shard ID None has connected to Gateway (Session ID: 26234d646f9e763a5eb6750de574975e).
+2026-07-21 18:59:24,152 | INFO | Bot uruchomiony jako Iris Nova#6933
