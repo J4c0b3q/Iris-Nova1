@@ -6,10 +6,12 @@ from core.database import get_connection
 from core.logger import log_info
 
 
+
 class Warnings(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+
 
 
     @discord.app_commands.command(
@@ -29,6 +31,7 @@ class Warnings(commands.Cog):
         member: discord.Member,
         reason: str = "Brak powodu"
     ):
+
 
         conn = get_connection()
         cursor = conn.cursor()
@@ -62,6 +65,7 @@ class Warnings(commands.Cog):
             )
         )
 
+
         warns = cursor.fetchone()[0]
 
 
@@ -71,7 +75,9 @@ class Warnings(commands.Cog):
             FROM moderation_settings
             WHERE guild_id = ?
             """,
-            (interaction.guild.id,)
+            (
+                interaction.guild.id,
+            )
         )
 
 
@@ -80,20 +86,16 @@ class Warnings(commands.Cog):
 
         if not settings:
 
-            cursor.execute(
-                """
-                INSERT OR IGNORE INTO moderation_settings
-                (guild_id)
-                VALUES (?)
-                """,
-                (interaction.guild.id,)
+            settings = (
+                3,
+                5,
+                10
             )
-
-            settings = (3, 5, 10)
 
 
         conn.commit()
         conn.close()
+
 
 
         embed = discord.Embed(
@@ -101,21 +103,25 @@ class Warnings(commands.Cog):
             color=discord.Color.yellow()
         )
 
+
         embed.add_field(
             name="Użytkownik",
             value=member.mention
         )
+
 
         embed.add_field(
             name="Moderator",
             value=interaction.user.mention
         )
 
+
         embed.add_field(
             name="Powód",
             value=reason,
             inline=False
         )
+
 
         embed.add_field(
             name="Łącznie ostrzeżeń",
@@ -133,17 +139,18 @@ class Warnings(commands.Cog):
         )
 
 
+
         timeout_warns = settings[0]
         kick_warns = settings[1]
         ban_warns = settings[2]
 
 
+
         if warns >= ban_warns:
 
             try:
-
                 await member.ban(
-                    reason="Iris: automatyczna kara za ostrzeżenia"
+                    reason="Iris: limit ostrzeżeń"
                 )
 
                 await interaction.followup.send(
@@ -154,12 +161,12 @@ class Warnings(commands.Cog):
                 pass
 
 
+
         elif warns >= kick_warns:
 
             try:
-
                 await member.kick(
-                    reason="Iris: automatyczna kara za ostrzeżenia"
+                    reason="Iris: limit ostrzeżeń"
                 )
 
                 await interaction.followup.send(
@@ -168,6 +175,7 @@ class Warnings(commands.Cog):
 
             except:
                 pass
+
 
 
         elif warns >= timeout_warns:
@@ -185,7 +193,7 @@ class Warnings(commands.Cog):
 
                 await member.timeout(
                     until,
-                    reason="Iris: automatyczny timeout"
+                    reason="Iris: limit ostrzeżeń"
                 )
 
 
@@ -193,19 +201,21 @@ class Warnings(commands.Cog):
                     f"🔇 {member.mention} otrzymał timeout."
                 )
 
+
             except:
                 pass
 
 
 
+
     @discord.app_commands.command(
-        name="warnings",
-        description="Pokazuje ostrzeżenia użytkownika"
+        name="warnlist",
+        description="Pokazuje listę ostrzeżeń użytkownika"
     )
     @discord.app_commands.describe(
         member="Użytkownik"
     )
-    async def warnings(
+    async def warnlist(
         self,
         interaction: discord.Interaction,
         member: discord.Member
@@ -235,6 +245,7 @@ class Warnings(commands.Cog):
         conn.close()
 
 
+
         if not data:
 
             await interaction.response.send_message(
@@ -244,25 +255,82 @@ class Warnings(commands.Cog):
             return
 
 
+
         text = ""
+
 
         for i, warning in enumerate(data, 1):
 
             text += (
-                f"**{i}.** {warning[0]} "
-                f"({warning[1]})\n"
+                f"**{i}.** {warning[0]}\n"
+                f"📅 {warning[1]}\n\n"
             )
 
 
+
         embed = discord.Embed(
-            title=f"⚠️ Ostrzeżenia {member}",
-            description=text,
+            title=f"⚠️ Lista ostrzeżeń: {member}",
+            description=text[:4000],
             color=discord.Color.orange()
         )
 
 
         await interaction.response.send_message(
             embed=embed
+        )
+
+
+
+
+    @discord.app_commands.command(
+        name="clearwarns",
+        description="Usuwa wszystkie ostrzeżenia użytkownika"
+    )
+    @discord.app_commands.describe(
+        member="Użytkownik"
+    )
+    @discord.app_commands.checks.has_permissions(
+        manage_messages=True
+    )
+    async def clearwarns(
+        self,
+        interaction: discord.Interaction,
+        member: discord.Member
+    ):
+
+
+        conn = get_connection()
+        cursor = conn.cursor()
+
+
+        cursor.execute(
+            """
+            DELETE FROM warnings
+            WHERE guild_id = ?
+            AND user_id = ?
+            """,
+            (
+                interaction.guild.id,
+                member.id
+            )
+        )
+
+
+        deleted = cursor.rowcount
+
+
+        conn.commit()
+        conn.close()
+
+
+
+        await interaction.response.send_message(
+            f"🧹 Usunięto **{deleted}** ostrzeżeń użytkownika {member.mention}."
+        )
+
+
+        log_info(
+            f"{interaction.user} usunął ostrzeżenia {member}"
         )
 
 

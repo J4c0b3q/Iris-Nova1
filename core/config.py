@@ -1,31 +1,17 @@
-"""
-Iris Nova - Main Configuration
-"""
-
-from core.env import Env
+# ==========================
+# Iris Nova Configuration
+# ==========================
 
 
-# =====================
-# Bot Identity
-# =====================
-
-BOT_NAME = "Iris Nova"
+BOT_NAME = "Iris"
 
 PREFIX = "!"
 
 VERSION = "1.0.0"
 
 
-# =====================
-# Owner
-# =====================
+OWNER_ID = 1525548792567431184
 
-OWNER_ID = Env.OWNER_ID or 1525548792567431184
-
-
-# =====================
-# Features
-# =====================
 
 SETTINGS = {
 
@@ -33,30 +19,6 @@ SETTINGS = {
 
     "LOGGING_ENABLED": True,
 
-    "WELCOME_ENABLED": True,
-
-    "SLASH_COMMANDS_ENABLED": True,
-
-    "AUTO_LOADER_ENABLED": True
+    "WELCOME_ENABLED": True
 
 }
-
-
-# =====================
-# Database
-# =====================
-
-DATABASE = {
-
-    "TYPE": "sqlite",
-
-    "FILE": "iris.db"
-
-}
-
-
-# =====================
-# Development
-# =====================
-
-DEBUG = True

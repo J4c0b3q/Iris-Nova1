@@ -15,11 +15,23 @@ class Ready(commands.Cog):
 
         try:
 
+            print(
+                "🔎 Aktualne slash commands:"
+            )
+
+            for command in self.bot.tree.get_commands():
+                print(
+                    f" - /{command.name}"
+                )
+
+
             synced = await self.bot.tree.sync()
+
 
             print(
                 f"🌙 Zsynchronizowano {len(synced)} slash commands"
             )
+
 
         except Exception as e:
 

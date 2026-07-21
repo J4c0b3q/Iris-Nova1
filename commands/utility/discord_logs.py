@@ -15,7 +15,8 @@ class DiscordLogs(commands.Cog):
     async def send_log(
         self,
         guild,
-        embed
+        embed,
+        log_type
     ):
 
 
@@ -23,9 +24,33 @@ class DiscordLogs(commands.Cog):
         cursor = conn.cursor()
 
 
+        columns = {
+
+            "member":
+            "member_log_channel",
+
+            "moderation":
+            "moderation_log_channel",
+
+            "message":
+            "message_log_channel"
+
+        }
+
+
+        column = columns.get(
+            log_type
+        )
+
+
+        if not column:
+            return
+
+
+
         cursor.execute(
-            """
-            SELECT log_channel
+            f"""
+            SELECT {column}
             FROM guilds
             WHERE guild_id = ?
             """,
@@ -37,11 +62,14 @@ class DiscordLogs(commands.Cog):
 
         data = cursor.fetchone()
 
+
         conn.close()
+
 
 
         if not data or not data[0]:
             return
+
 
 
         channel = guild.get_channel(
@@ -57,6 +85,11 @@ class DiscordLogs(commands.Cog):
 
 
 
+    # =====================
+    # MEMBER LOGS
+    # =====================
+
+
     @commands.Cog.listener()
     async def on_member_join(
         self,
@@ -65,7 +98,7 @@ class DiscordLogs(commands.Cog):
 
 
         embed = discord.Embed(
-            title="🟢 Nowy użytkownik",
+            title="🟢 Użytkownik dołączył",
             color=discord.Color.green()
         )
 
@@ -86,7 +119,8 @@ class DiscordLogs(commands.Cog):
 
         await self.send_log(
             member.guild,
-            embed
+            embed,
+            "member"
         )
 
 
@@ -111,18 +145,17 @@ class DiscordLogs(commands.Cog):
         )
 
 
-        embed.add_field(
-            name="ID",
-            value=str(member.id),
-            inline=False
-        )
-
-
         await self.send_log(
             member.guild,
-            embed
+            embed,
+            "member"
         )
 
+
+
+    # =====================
+    # MESSAGE LOGS
+    # =====================
 
 
     @commands.Cog.listener()
@@ -132,7 +165,7 @@ class DiscordLogs(commands.Cog):
     ):
 
 
-        if message.guild is None:
+        if not message.guild:
             return
 
 
@@ -163,18 +196,89 @@ class DiscordLogs(commands.Cog):
 
         embed.add_field(
             name="Treść",
-            value=message.content[:1024]
-            if message.content
-            else "Brak tekstu",
+            value=(
+                message.content[:1024]
+                if message.content
+                else "Brak treści"
+            ),
             inline=False
         )
 
 
         await self.send_log(
             message.guild,
-            embed
+            embed,
+            "message"
         )
 
+
+
+    # =====================
+    # MODERATION LOGS
+    # =====================
+
+
+    @commands.Cog.listener()
+    async def on_member_ban(
+        self,
+        guild,
+        user
+    ):
+
+
+        embed = discord.Embed(
+            title="🔨 Ban użytkownika",
+            color=discord.Color.red()
+        )
+
+
+        embed.add_field(
+            name="Użytkownik",
+            value=str(user),
+            inline=False
+        )
+
+
+        await self.send_log(
+            guild,
+            embed,
+            "moderation"
+        )
+
+
+
+    @commands.Cog.listener()
+    async def on_member_unban(
+        self,
+        guild,
+        user
+    ):
+
+
+        embed = discord.Embed(
+            title="🔓 Zdjęto bana",
+            color=discord.Color.green()
+        )
+
+
+        embed.add_field(
+            name="Użytkownik",
+            value=str(user),
+            inline=False
+        )
+
+
+        await self.send_log(
+            guild,
+            embed,
+            "moderation"
+        )
+
+
+
+    # =====================
+    # SLASH COMMAND LOGS
+    # =====================
 
 
     @commands.Cog.listener()
@@ -185,12 +289,13 @@ class DiscordLogs(commands.Cog):
     ):
 
 
-        if interaction.guild is None:
+        if not interaction.guild:
             return
 
 
+
         embed = discord.Embed(
-            title="⚙️ Wykonano slash command",
+            title="⚙️ Wykonano komendę",
             color=discord.Color.blue()
         )
 
@@ -209,9 +314,29 @@ class DiscordLogs(commands.Cog):
         )
 
 
+        # komendy moderacyjne lecą do moderacji
+        moderation_commands = [
+
+            "ban",
+            "kick",
+            "warn",
+            "clear",
+            "clearwarns"
+
+        ]
+
+
+        log_type = (
+            "moderation"
+            if command.name in moderation_commands
+            else "message"
+        )
+
+
         await self.send_log(
             interaction.guild,
-            embed
+            embed,
+            log_type
         )
 
 

@@ -359,3 +359,56 @@ Traceback (most recent call last):
     raise MissingPermissions(missing)
 discord.app_commands.errors.MissingPermissions: You are missing Kick Members permission(s) to run this command.
 2026-07-21 20:00:59,770 | INFO | _.bl4ck0ut._ wyrzuci³ blacky_yfl: Brak powodu
+2026-07-21 20:05:03,871 | WARNING | PyNaCl is not installed, voice will NOT be supported
+2026-07-21 20:05:03,872 | WARNING | davey is not installed, voice will NOT be supported
+2026-07-21 20:05:07,953 | INFO | logging in using static token
+2026-07-21 20:05:10,255 | INFO | Shard ID None has connected to Gateway (Session ID: fb531cac261c8cd90a56c6292f40a2d4).
+2026-07-21 20:05:12,628 | INFO | Bot uruchomiony jako Iris Nova#6933
+2026-07-21 20:08:20,782 | WARNING | PyNaCl is not installed, voice will NOT be supported
+2026-07-21 20:08:20,783 | WARNING | davey is not installed, voice will NOT be supported
+2026-07-21 20:08:25,080 | INFO | logging in using static token
+2026-07-21 20:08:26,442 | INFO | Shard ID None has connected to Gateway (Session ID: 0f40524203efe1ca318ddaedd4f40395).
+2026-07-21 20:08:28,774 | INFO | Bot uruchomiony jako Iris Nova#6933
+2026-07-21 20:08:46,990 | INFO | _.bl4ck0ut._ ostrzeg³ blacky_yfl: debil
+2026-07-21 20:09:15,621 | INFO | _.bl4ck0ut._ usun¹³ 1 wiadomoœci na nie-dotykavlc
+2026-07-21 20:12:21,464 | WARNING | PyNaCl is not installed, voice will NOT be supported
+2026-07-21 20:12:21,466 | WARNING | davey is not installed, voice will NOT be supported
+2026-07-21 20:12:28,308 | INFO | logging in using static token
+2026-07-21 20:12:31,578 | INFO | Shard ID None has connected to Gateway (Session ID: 70683d13550cffc99b10728140d35781).
+2026-07-21 20:12:33,941 | INFO | Bot uruchomiony jako Iris Nova#6933
+2026-07-21 20:24:05,390 | WARNING | PyNaCl is not installed, voice will NOT be supported
+2026-07-21 20:24:05,391 | WARNING | davey is not installed, voice will NOT be supported
+2026-07-21 20:24:11,443 | INFO | logging in using static token
+2026-07-21 20:24:12,861 | INFO | Shard ID None has connected to Gateway (Session ID: ec44ea592a4da2095ec35fa1a70b9386).
+2026-07-21 20:24:14,888 | INFO | Iris uruchomiony jako Iris Nova#6933
+2026-07-21 20:24:15,191 | INFO | Bot uruchomiony jako Iris Nova#6933
+2026-07-21 20:27:32,342 | WARNING | PyNaCl is not installed, voice will NOT be supported
+2026-07-21 20:27:32,343 | WARNING | davey is not installed, voice will NOT be supported
+2026-07-21 20:27:36,196 | INFO | logging in using static token
+2026-07-21 20:27:37,390 | INFO | Shard ID None has connected to Gateway (Session ID: fc7e29519b5b7e57e9fc4774a0400c73).
+2026-07-21 20:27:39,419 | INFO | Iris uruchomiony jako Iris Nova#6933
+2026-07-21 20:27:39,732 | INFO | Bot uruchomiony jako Iris Nova#6933
+2026-07-21 20:35:36,890 | WARNING | PyNaCl is not installed, voice will NOT be supported
+2026-07-21 20:35:36,890 | WARNING | davey is not installed, voice will NOT be supported
+2026-07-21 20:35:40,731 | INFO | logging in using static token
+2026-07-21 20:35:44,323 | INFO | Shard ID None has connected to Gateway (Session ID: 8ef0b53d1df3bebc14988ad1b3739d82).
+2026-07-21 20:35:46,340 | INFO | Iris uruchomiony jako Iris Nova#6933
+2026-07-21 20:35:46,607 | INFO | Bot uruchomiony jako Iris Nova#6933
+2026-07-21 20:39:36,171 | WARNING | PyNaCl is not installed, voice will NOT be supported
+2026-07-21 20:39:36,172 | WARNING | davey is not installed, voice will NOT be supported
+2026-07-21 20:39:40,532 | INFO | logging in using static token
+2026-07-21 20:39:42,022 | INFO | Shard ID None has connected to Gateway (Session ID: 34ccec172db61b930f354fe83a487a0e).
+2026-07-21 20:39:44,037 | INFO | Iris uruchomiony jako Iris Nova#6933
+2026-07-21 20:39:44,568 | INFO | Bot uruchomiony jako Iris Nova#6933
+2026-07-21 20:44:23,001 | WARNING | PyNaCl is not installed, voice will NOT be supported
+2026-07-21 20:44:23,002 | WARNING | davey is not installed, voice will NOT be supported
+2026-07-21 20:44:30,497 | INFO | logging in using static token
+2026-07-21 20:44:31,750 | INFO | Shard ID None has connected to Gateway (Session ID: 8ab0f07a75492b556f78599a925bc507).
+2026-07-21 20:44:33,781 | INFO | Iris uruchomiony jako Iris Nova#6933
+2026-07-21 20:44:34,135 | INFO | Bot uruchomiony jako Iris Nova#6933
+2026-07-21 20:47:45,383 | WARNING | PyNaCl is not installed, voice will NOT be supported
+2026-07-21 20:47:45,383 | WARNING | davey is not installed, voice will NOT be supported
+2026-07-21 20:47:49,080 | INFO | logging in using static token
+2026-07-21 20:47:50,368 | INFO | Shard ID None has connected to Gateway (Session ID: 6d6ed3f873c8d63675c75e6c9b9f3ca6).
+2026-07-21 20:47:52,390 | INFO | Iris uruchomiony jako Iris Nova#6933
+2026-07-21 20:47:52,678 | INFO | Bot uruchomiony jako Iris Nova#6933

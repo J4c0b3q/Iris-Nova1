@@ -10,14 +10,33 @@ class ModConfig(commands.Cog):
         self.bot = bot
 
 
-
     @discord.app_commands.command(
         name="modconfig",
-        description="Konfiguruje automatyczne kary za ostrzeżenia"
+        description="Konfiguracja automatycznych kar Iris"
     )
     @discord.app_commands.describe(
-        option="Opcja: timeout, kick lub ban",
+        option="Rodzaj kary",
         value="Ilość ostrzeżeń"
+    )
+    @discord.app_commands.choices(
+        option=[
+
+            discord.app_commands.Choice(
+                name="🔇 Timeout",
+                value="timeout"
+            ),
+
+            discord.app_commands.Choice(
+                name="👢 Kick",
+                value="kick"
+            ),
+
+            discord.app_commands.Choice(
+                name="🔨 Ban",
+                value="ban"
+            )
+
+        ]
     )
     @discord.app_commands.checks.has_permissions(
         administrator=True
@@ -25,7 +44,7 @@ class ModConfig(commands.Cog):
     async def modconfig(
         self,
         interaction: discord.Interaction,
-        option: str = None,
+        option: discord.app_commands.Choice[str] = None,
         value: int = None
     ):
 
@@ -46,22 +65,24 @@ class ModConfig(commands.Cog):
         )
 
 
+        # ustawianie wartości
+
         if option and value is not None:
 
 
-            if option not in [
-                "timeout",
-                "kick",
-                "ban"
-            ]:
+            if value < 1:
 
                 await interaction.response.send_message(
-                    "❌ Dostępne opcje: timeout, kick, ban",
+                    "❌ Liczba ostrzeżeń musi być większa od 0.",
                     ephemeral=True
                 )
 
                 conn.close()
                 return
+
+
+
+            option = option.value
 
 
 
@@ -115,17 +136,26 @@ class ModConfig(commands.Cog):
 
 
             await interaction.response.send_message(
-                f"⚙️ Ustawiono `{option}` na `{value}` ostrzeżeń."
+                f"⚙️ Ustawiono **{option}** na **{value} ostrzeżeń**.",
+                ephemeral=True
             )
 
             return
 
 
 
+        # wyświetlanie konfiguracji
+
+
         cursor.execute(
             """
-            SELECT timeout_warns, kick_warns, ban_warns
+            SELECT
+            timeout_warns,
+            kick_warns,
+            ban_warns
+
             FROM moderation_settings
+
             WHERE guild_id = ?
             """,
             (
@@ -137,6 +167,7 @@ class ModConfig(commands.Cog):
         data = cursor.fetchone()
 
         conn.close()
+
 
 
         if not data:
@@ -151,28 +182,34 @@ class ModConfig(commands.Cog):
 
         embed = discord.Embed(
             title="🛡️ Iris Nova — Moderacja",
+            description="Automatyczne kary za ostrzeżenia",
             color=discord.Color.blue()
         )
 
 
         embed.add_field(
             name="🔇 Timeout",
-            value=f"{data[0]} ostrzeżeń",
+            value=f"`{data[0]}` ostrzeżeń",
             inline=False
         )
 
 
         embed.add_field(
             name="👢 Kick",
-            value=f"{data[1]} ostrzeżeń",
+            value=f"`{data[1]}` ostrzeżeń",
             inline=False
         )
 
 
         embed.add_field(
             name="🔨 Ban",
-            value=f"{data[2]} ostrzeżeń",
+            value=f"`{data[2]}` ostrzeżeń",
             inline=False
+        )
+
+
+        embed.set_footer(
+            text="Iris Nova Moderation System"
         )
 
 
