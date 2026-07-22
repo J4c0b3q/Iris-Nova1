@@ -104,6 +104,20 @@ def init_database() -> sqlite3.Connection:
     )
     """)
 
+    # ==========================
+    # TEMP ROLES
+    # ==========================
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS temp_roles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        guild_id INTEGER,
+        user_id INTEGER,
+        role_id INTEGER,
+        expires_at TIMESTAMP
+    )
+    """)
+
     conn.commit()
     logger.info("Database initialized successfully.")
     return conn
