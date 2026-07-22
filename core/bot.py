@@ -28,7 +28,7 @@ class IrisBot(commands.Bot):
         self.failed_modules = 0
 
         self.database = None
-        self.guilds = None
+        self.guild_data = {}
         self.warnings = None
 
         self.cache = Cache()

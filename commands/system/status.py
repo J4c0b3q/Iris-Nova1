@@ -1,118 +1,95 @@
-import discord
-from discord.ext import commands
-
-from core.config import BOT_NAME, VERSION, SETTINGS
-
 import time
 
+import discord
+from discord import app_commands
 
-start_time = time.time()
+from core.base_cog import BaseCog
+from core.config import BOT_NAME, VERSION, SETTINGS
+from core.constants import EMBED_COLOR
+
+START_TIME = time.time()
 
 
-class Status(commands.Cog):
-
+class Status(BaseCog):
     def __init__(self, bot):
-        self.bot = bot
+        super().__init__(bot)
 
-
-    @commands.Cog.listener()
+    @discord.ext.commands.Cog.listener()
     async def on_ready(self):
-
         await self.bot.change_presence(
             activity=discord.Game(
                 name=f"/help | {BOT_NAME}"
             )
         )
 
-
-    @discord.app_commands.command(
+    @app_commands.command(
         name="status",
-        description="Pokazuje status Iris"
+        description="Pokazuje status Iris."
     )
     async def status(
         self,
-        interaction: discord.Interaction
+        interaction: discord.Interaction,
     ):
 
-
-        uptime = int(
-            time.time() - start_time
-        )
-
+        uptime = int(time.time() - START_TIME)
 
         hours = uptime // 3600
         minutes = (uptime % 3600) // 60
 
-
         members = sum(
-            g.member_count or 0
-            for g in self.bot.guilds
+            guild.member_count or 0
+            for guild in self.bot.guilds
         )
-
-
-        ai_status = (
-            "🟢 ON"
-            if SETTINGS["AI_ENABLED"]
-            else "🔴 OFF"
-        )
-
 
         embed = discord.Embed(
             title=f"🌙 {BOT_NAME}",
-            color=discord.Color.green()
+            color=EMBED_COLOR,
         )
 
-
         embed.add_field(
-            name="🟢 Status",
-            value="Online",
-            inline=False
+            name="Status",
+            value="🟢 Online",
+            inline=False,
         )
 
-
         embed.add_field(
-            name="⏱️ Czas działania",
+            name="Czas działania",
             value=f"{hours}h {minutes}m",
-            inline=True
+            inline=True,
         )
 
-
         embed.add_field(
-            name="🌐 Serwery",
+            name="Serwery",
             value=str(len(self.bot.guilds)),
-            inline=True
+            inline=True,
         )
 
-
         embed.add_field(
-            name="👥 Użytkownicy",
+            name="Użytkownicy",
             value=str(members),
-            inline=True
+            inline=True,
         )
 
-
         embed.add_field(
-            name="🧠 AI",
-            value=ai_status,
-            inline=True
+            name="AI",
+            value="🟢 ON" if SETTINGS["AI_ENABLED"] else "🔴 OFF",
+            inline=True,
         )
 
-
         embed.add_field(
-            name="⚙️ Wersja",
+            name="Wersja",
             value=VERSION,
-            inline=True
+            inline=True,
         )
 
+        embed.set_footer(
+            text="Iris Nova"
+        )
 
         await interaction.response.send_message(
             embed=embed
         )
 
 
-
 async def setup(bot):
-
-    await bot.add_cog(
-        Status(bot)
-    )
+    await bot.add_cog(Status(bot))
