@@ -1,26 +1,48 @@
 import os
-from openai import OpenAI
+from core.env import Env
 from core.personality import IRIS_PERSONALITY
 
-client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY")
-)
+try:
+    from openai import OpenAI
+except ImportError:
+    OpenAI = None
+
+_client = None
 
 
-async def ask_iris(question):
-    print("Otrzymano pytanie:", question)
+def get_openai_client():
+    """Zwraca zainicjalizowaną instancję klienta OpenAI lub None jeśli brak klucza."""
+    global _client
+    if _client is None:
+        api_key = Env.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY")
+        if api_key and OpenAI:
+            _client = OpenAI(api_key=api_key)
+    return _client
+
+
+async def ask_iris(question: str) -> str:
+    """Zadaje pytanie sztucznej inteligencji z zachowaniem osobowości Iris."""
+    if not question or not question.strip():
+        return "Podaj pytanie, na które mam odpowiedzieć!"
+
+    client = get_openai_client()
+    if not client:
+        return "⚠️ Moduł AI jest obecnie niedostępny (brak skonfigurowanego klucza OPENAI_API_KEY w pliku .env)."
 
     try:
-        response = client.responses.create(
-            model="gpt-5-mini",
-            instructions=IRIS_PERSONALITY,
-            input=question
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": IRIS_PERSONALITY},
+                {"role": "user", "content": question}
+            ],
+            max_tokens=500,
+            temperature=0.7
         )
 
-        print("Odpowiedź AI:", response.output_text)
-
-        return response.output_text
+        reply = response.choices[0].message.content
+        return reply if reply else "Nie udało się wygenerować odpowiedzi."
 
     except Exception as e:
-        print("BŁĄD AI:", e)
-        return "Wystąpił błąd podczas łączenia z AI."
+        print(f"[AI ERROR] Błąd podczas komunikacji z API: {e}")
+        return "✨ Przepraszam, wystąpił problem podczas przetwarzania Twojego zapytania przez AI."

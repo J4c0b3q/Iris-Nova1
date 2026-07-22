@@ -1,57 +1,26 @@
 from discord.ext import commands
-
 from core.config import BOT_NAME, VERSION
-from core.logger import log_info
+from core.logger import get_logger, log_info
+
+logger = get_logger("ReadyEvent")
 
 
 class Ready(commands.Cog):
-
     def __init__(self, bot):
         self.bot = bot
 
-
     @commands.Cog.listener()
     async def on_ready(self):
-
         try:
-
-            print(
-                "🔎 Aktualne slash commands:"
-            )
-
-            for command in self.bot.tree.get_commands():
-                print(
-                    f" - /{command.name}"
-                )
-
-
+            logger.info("Synchronizowanie slash commands z serwerami Discord...")
             synced = await self.bot.tree.sync()
-
-
-            print(
-                f"🌙 Zsynchronizowano {len(synced)} slash commands"
-            )
-
-
+            logger.info(f"🌙 Zsynchronizowano {len(synced)} komend slash.")
         except Exception as e:
+            logger.error(f"❌ Błąd synchronizacji slash commands: {e}")
 
-            print(
-                f"❌ Błąd synchronizacji slash: {e}"
-            )
-
-
-        print(
-            f"{BOT_NAME} v{VERSION} działa jako {self.bot.user}"
-        )
-
-
-        log_info(
-            f"Bot uruchomiony jako {self.bot.user}"
-        )
+        logger.info(f"✨ {BOT_NAME} v{VERSION} pomyślnie połączony jako {self.bot.user}")
+        log_info(f"Bot gotowy do pracy. Gildie: {len(self.bot.guilds)}")
 
 
 async def setup(bot):
-
-    await bot.add_cog(
-        Ready(bot)
-    )
+    await bot.add_cog(Ready(bot))

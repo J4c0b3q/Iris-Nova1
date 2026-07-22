@@ -1,5 +1,6 @@
 import asyncio
-
+import signal
+import sys
 from core.bot import IrisBot
 from core.config import BOT_NAME, VERSION
 from core.env import Env
@@ -11,42 +12,71 @@ from database.repositories.warning_repository import WarningRepository
 
 logger = get_logger("Iris")
 
-bot = IrisBot()
 
-
-@bot.event
-async def on_ready():
-    logger.info("=" * 60)
-    logger.info(f"{BOT_NAME} v{VERSION}")
-    logger.info(f"Logged in as: {bot.user} ({bot.user.id})")
-    logger.info(f"Guilds: {len(bot.guilds)}")
-    logger.info(f"Users: {sum(g.member_count or 0 for g in bot.guilds)}")
-    logger.info("=" * 60)
+async def shutdown(bot: IrisBot):
+    """Bezpiecznie zamyka połączenia bota i bazy danych."""
+    logger.info("Rozpoczynanie bezpiecznego zamykania bota Iris...")
+    if hasattr(bot, "database") and bot.database:
+        try:
+            bot.database.close()
+            logger.info("Baza danych została pomyślnie zamknięta.")
+        except Exception as e:
+            logger.error(f"Błąd podczas zamykania bazy danych: {e}")
+            
+    if not bot.is_closed():
+        await bot.close()
+        logger.info("Połączenie z Discordem zostało pomyślnie zamknięte.")
 
 
 async def main():
-    logger.info("Starting Iris...")
+    logger.info("Startowanie Iris Nova...")
 
-    # Inicjalizacja bazy danych
-    bot.database = init_database()
+    # 1. Sprawdzenie tokenu Discorda
+    if not Env.DISCORD_TOKEN:
+        logger.critical("Brak DISCORD_TOKEN w pliku .env lub zmiennych środowiskowych!")
+        sys.exit(1)
 
-    # Repositories
-    bot.guilds_repo = GuildRepository(bot.database)
-    bot.warnings_repo = WarningRepository(bot.database)
+    # 2. Tworzenie instancji bota
+    bot = IrisBot()
 
-    logger.info("Database initialized.")
+    # 3. Obsługa sygnałów systemowych do łagodnego wyłączania
+    try:
+        loop = asyncio.get_running_loop()
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            try:
+                loop.add_signal_handler(sig, lambda: asyncio.create_task(shutdown(bot)))
+            except NotImplementedError:
+                pass  # Windows nie obsługuje niektórych sygnałów w pętli asyncio
+    except Exception as e:
+        logger.warning(f"Nie udało się zarejestrować handlerów sygnałów: {e}")
 
-    async with bot:
-        logger.info("Connecting to Discord...")
-        await bot.start(Env.DISCORD_TOKEN)
+    # 4. Inicjalizacja bazy danych i repozytoriów
+    try:
+        bot.database = init_database()
+        bot.guilds_repo = GuildRepository(bot.database)
+        bot.warnings_repo = WarningRepository(bot.database)
+        logger.info("Baza danych oraz repozytoria zainicjalizowane.")
+    except Exception as e:
+        logger.critical(f"Krytyczny błąd podczas inicjalizacji bazy danych: {e}")
+        return
+
+    # 5. Uruchomienie bota
+    try:
+        async with bot:
+            logger.info("Łączenie z serwerami Discord...")
+            await bot.start(Env.DISCORD_TOKEN)
+    except asyncio.CancelledError:
+        logger.info("Zadanie główne zostało anulowane.")
+    except Exception as e:
+        logger.exception(f"Fatalny błąd podczas działania bota: {e}")
+    finally:
+        await shutdown(bot)
 
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
-
-    except KeyboardInterrupt:
-        logger.warning("Bot stopped by user.")
-
+    except (KeyboardInterrupt, SystemExit):
+        logger.warning("Bot został wyłączony przez użytkownika.")
     except Exception:
-        logger.exception("Fatal error while starting Iris.")
+        logger.exception("Krytyczna awaria procesu Iris.")
