@@ -26,21 +26,28 @@ FFMPEG_OPTIONS = {
 
 ytdl = yt_dlp.YoutubeDL(YTDL_OPTIONS)
 
+
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, volume=0.5):
         super().__init__(source, volume)
         self.data = data
         self.title = data.get('title')
         self.url = data.get('url')
+        self.duration = data.get('duration')
 
     @classmethod
     async def from_url(cls, url, *, loop=None, stream=True):
         loop = loop or asyncio.get_event_loop()
-        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
+        data = await loop.run_in_executor(
+            None, lambda: ytdl.extract_info(url, download=not stream)
+        )
+
         if 'entries' in data:
             data = data['entries'][0]
+
         filename = data['url'] if stream else ytdl.prepare_filename(data)
         return cls(discord.FFmpegPCMAudio(filename, **FFMPEG_OPTIONS), data=data)
+
 
 class Music(commands.Cog):
     def __init__(self, bot):
@@ -53,58 +60,174 @@ class Music(commands.Cog):
         return self.queues[guild_id]
 
     def play_next(self, interaction: discord.Interaction):
-        queue = self.get_queue(interaction.guild.id)
+        guild_id = interaction.guild.id
+        queue = self.get_queue(guild_id)
+
         if len(queue) > 0:
             next_track = queue.pop(0)
             voice_client = interaction.guild.voice_client
+
             if voice_client:
-                voice_client.play(next_track, after=lambda e: self.play_next(interaction))
+                voice_client.play(
+                    next_track,
+                    after=lambda e: self.play_next(interaction)
+                )
                 asyncio.run_coroutine_threadsafe(
-                    interaction.channel.send(f"🎶 **Teraz odtwarzam:** `{next_track.title}`"),
+                    interaction.channel.send(
+                        f"🎶 **Teraz odtwarzam:** `{next_track.title}`"
+                    ),
                     self.bot.loop
                 )
 
-    @discord.app_commands.command(name="play", description="Odtwarza muzykę z YT lub wyszukuje piosenkę")
+    @discord.app_commands.command(
+        name="play",
+        description="Odtwarza muzykę z YouTube lub wyszukuje piosenkę"
+    )
+    @discord.app_commands.describe(query="Nazwa utworu lub link do YouTube")
     async def play(self, interaction: discord.Interaction, query: str):
         if not interaction.user.voice:
-            await interaction.response.send_message("❌ Musisz być na kanale głosowym!", ephemeral=True)
+            await interaction.response.send_message(
+                "❌ Musisz znajdować się na kanale głosowym, aby włączyć muzykę!",
+                ephemeral=True
+            )
             return
 
         voice_channel = interaction.user.voice.channel
         voice_client = interaction.guild.voice_client
+
         await interaction.response.defer()
 
         if not voice_client:
-            voice_client = await voice_channel.connect()
+            try:
+                voice_client = await voice_channel.connect()
+            except Exception as e:
+                await interaction.followup.send(f"❌ Nie udało się połączyć z kanałem: {e}")
+                return
         elif voice_client.channel != voice_channel:
             await voice_client.move_to(voice_channel)
 
-        player = await YTDLSource.from_url(query, loop=self.bot.loop, stream=True)
+        try:
+            player = await YTDLSource.from_url(query, loop=self.bot.loop, stream=True)
+        except Exception as e:
+            await interaction.followup.send(f"❌ Błąd podczas pobierania utworu: {e}")
+            return
+
         queue = self.get_queue(interaction.guild.id)
 
         if voice_client.is_playing() or voice_client.is_paused():
             queue.append(player)
-            await interaction.followup.send(f"🎵 Dodano do kolejki: **{player.title}**")
+            embed = discord.Embed(
+                title="🎵 Dodano do kolejki",
+                description=f"[{player.title}]({player.url})",
+                color=discord.Color.purple()
+            )
+            embed.add_field(name="Pozycja w kolejce", value=str(len(queue)))
+            await interaction.followup.send(embed=embed)
         else:
-            voice_client.play(player, after=lambda e: self.play_next(interaction))
-            await interaction.followup.send(f"🎶 Odtwarzam: **{player.title}**")
+            voice_client.play(
+                player,
+                after=lambda e: self.play_next(interaction)
+            )
+            embed = discord.Embed(
+                title="🎶 Rozpoczęto odtwarzanie",
+                description=f"[{player.title}]({player.url})",
+                color=discord.Color.green()
+            )
+            await interaction.followup.send(embed=embed)
 
-    @discord.app_commands.command(name="skip", description="Pomija obecny utwór")
+    @discord.app_commands.command(
+        name="skip",
+        description="Pomija obecnie odtwarzany utwór"
+    )
     async def skip(self, interaction: discord.Interaction):
         voice_client = interaction.guild.voice_client
-        if voice_client and voice_client.is_playing():
-            voice_client.stop()
-            await interaction.response.send_message("⏭️ Pominięto utwór.")
-        else:
-            await interaction.response.send_message("⚠️ Nic nie gra.", ephemeral=True)
 
-    @discord.app_commands.command(name="stop", description="Zatrzymuje odtwarzanie i czyści kolejkę")
+        if not voice_client or not voice_client.is_playing():
+            await interaction.response.send_message("⚠️ Żaden utwór nie jest obecnie odtwarzany.", ephemeral=True)
+            return
+
+        voice_client.stop()
+        await interaction.response.send_message("⏭️ Pominięto obecny utwór.")
+
+    @discord.app_commands.command(
+        name="pause",
+        description="Wstrzymuje odtwarzanie muzyki"
+    )
+    async def pause(self, interaction: discord.Interaction):
+        voice_client = interaction.guild.voice_client
+
+        if voice_client and voice_client.is_playing():
+            voice_client.pause()
+            await interaction.response.send_message("⏸️ Wstrzymano odtwarzanie.")
+        else:
+            await interaction.response.send_message("⚠️ Muzyka nie jest obecnie odtwarzana.", ephemeral=True)
+
+    @discord.app_commands.command(
+        name="resume",
+        description="Wznawia wstrzymane odtwarzanie"
+    )
+    async def resume(self, interaction: discord.Interaction):
+        voice_client = interaction.guild.voice_client
+
+        if voice_client and voice_client.is_paused():
+            voice_client.resume()
+            await interaction.response.send_message("▶️ Wznowiono odtwarzanie.")
+        else:
+            await interaction.response.send_message("⚠️ Odtwarzanie nie jest wstrzymane.", ephemeral=True)
+
+    @discord.app_commands.command(
+        name="stop",
+        description="Zatrzymuje muzykę i czyści kolejkę"
+    )
     async def stop(self, interaction: discord.Interaction):
         voice_client = interaction.guild.voice_client
+
         if voice_client:
             self.queues[interaction.guild.id] = []
             voice_client.stop()
-            await interaction.response.send_message("⏹️ Zatrzymano muzykę.")
+            await interaction.response.send_message("⏹️ Zatrzymano muzykę i wyczyszczono kolejkę.")
+        else:
+            await interaction.response.send_message("⚠️ Bot nie znajduje się na kanale głosowym.", ephemeral=True)
+
+    @discord.app_commands.command(
+        name="queue",
+        description="Wyświetla aktualną kolejkę utworów"
+    )
+    async def queue(self, interaction: discord.Interaction):
+        queue = self.get_queue(interaction.guild.id)
+
+        if not queue:
+            await interaction.response.send_message("📜 Kolejka jest obecnie pusta.", ephemeral=True)
+            return
+
+        description = ""
+        for idx, track in enumerate(queue[:10], start=1):
+            description += f"**{idx}.** [{track.title}]({track.url})\n"
+
+        if len(queue) > 10:
+            description += f"\n*...oraz {len(queue) - 10} więcej utworów*"
+
+        embed = discord.Embed(
+            title="📜 Kolejka Odtwarzania Iris",
+            description=description,
+            color=discord.Color.blue()
+        )
+        await interaction.response.send_message(embed=embed)
+
+    @discord.app_commands.command(
+        name="leave",
+        description="Rozłącza bota z kanału głosowego"
+    )
+    async def leave(self, interaction: discord.Interaction):
+        voice_client = interaction.guild.voice_client
+
+        if voice_client:
+            await voice_client.disconnect()
+            self.queues[interaction.guild.id] = []
+            await interaction.response.send_message("👋 Rozłączono z kanału głosowego.")
+        else:
+            await interaction.response.send_message("⚠️ Bot nie przebywa na żadnym kanale głosowym.", ephemeral=True)
+
 
 async def setup(bot):
     await bot.add_cog(Music(bot))

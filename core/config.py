@@ -5,7 +5,7 @@ Tutaj NIE przechowujemy sekretów.
 
 BOT_NAME = "Iris"
 VERSION = "1.0.0"
-PREFIX = "!"
+PREFIX = "/"
 
 OWNER_ID = 0
 
