@@ -38,7 +38,7 @@ class Moderation(BaseCog):
 
     @tasks.loop(seconds=30)
     async def check_temp_roles(self):
-        """Sprawdza i automatycznie odbiera wygasłe tymczasowe role."""
+        """Sprawdza i odbiera wygasłe tymczasowe role."""
         try:
             conn = get_connection()
             cursor = conn.cursor()
@@ -248,6 +248,58 @@ class Moderation(BaseCog):
         except Exception as e:
             await interaction.response.send_message(
                 f"❌ Wystąpił błąd: {e}",
+                ephemeral=True
+            )
+
+    @discord.app_commands.command(
+        name="clear",
+        description="Usuwa określoną liczbę wiadomości z kanału"
+    )
+    @discord.app_commands.describe(
+        amount="Liczba wiadomości do usunięcia (1-100)",
+        member="Opcjonalnie: usuwaj tylko wiadomości od tej osoby"
+    )
+    @discord.app_commands.checks.has_permissions(manage_messages=True)
+    async def clear(
+        self,
+        interaction: discord.Interaction,
+        amount: int,
+        member: discord.Member = None
+    ):
+        if amount < 1 or amount > 100:
+            await interaction.response.send_message(
+                "❌ Podaj liczbę wiadomości w zakresie od 1 do 100!",
+                ephemeral=True
+            )
+            return
+
+        try:
+            await interaction.response.defer(ephemeral=True)
+        except Exception:
+            pass
+
+        def check(msg: discord.Message):
+            if member:
+                return msg.author.id == member.id
+            return True
+
+        try:
+            deleted = await interaction.channel.purge(limit=amount, check=check)
+            count = len(deleted)
+            msg = f"🧹 Pomyślnie usunięto **{count}** wiadomości"
+            if member:
+                msg += f" od {member.mention}"
+            msg += "."
+            await interaction.followup.send(msg, ephemeral=True)
+            self.logger.info(f"{interaction.user} usunął {count} wiadomości na kanale {interaction.channel}")
+        except discord.Forbidden:
+            await interaction.followup.send(
+                "❌ Bot nie posiada uprawnienia **Zarządzanie Wiadomościami (Manage Messages)**!",
+                ephemeral=True
+            )
+        except Exception as e:
+            await interaction.followup.send(
+                f"❌ Wystąpił błąd podczas usuwania wiadomości: {e}",
                 ephemeral=True
             )
 
