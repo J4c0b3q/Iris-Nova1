@@ -22,11 +22,14 @@ def add_column_if_missing(
     column: str,
     column_type: str,
 ) -> None:
+
     cursor.execute(f"PRAGMA table_info({table})")
+
     columns = [row[1] for row in cursor.fetchall()]
 
     if column not in columns:
         logger.info(f"Adding column '{column}' to table '{table}'")
+
         cursor.execute(
             f"""
             ALTER TABLE {table}
@@ -36,6 +39,7 @@ def add_column_if_missing(
 
 
 def init_database() -> sqlite3.Connection:
+
     logger.info("Initializing database...")
 
     conn = get_connection()
@@ -44,106 +48,181 @@ def init_database() -> sqlite3.Connection:
     # ==========================
     # GUILDS
     # ==========================
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS guilds (
+
         guild_id INTEGER PRIMARY KEY,
+
         log_channel INTEGER,
+
         welcome_channel INTEGER,
+
         prefix TEXT DEFAULT '/'
+
     )
     """)
 
-    add_column_if_missing(cursor, "guilds", "member_log_channel", "INTEGER")
-    add_column_if_missing(cursor, "guilds", "moderation_log_channel", "INTEGER")
-    add_column_if_missing(cursor, "guilds", "message_log_channel", "INTEGER")
+    add_column_if_missing(
+        cursor,
+        "guilds",
+        "member_log_channel",
+        "INTEGER",
+    )
+
+    add_column_if_missing(
+        cursor,
+        "guilds",
+        "moderation_log_channel",
+        "INTEGER",
+    )
+
+    add_column_if_missing(
+        cursor,
+        "guilds",
+        "message_log_channel",
+        "INTEGER",
+    )
+
+    add_column_if_missing(
+        cursor,
+        "guilds",
+        "level_channel",
+        "INTEGER",
+    )
 
     # ==========================
     # WARNINGS
     # ==========================
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS warnings (
+
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+
         guild_id INTEGER,
+
         user_id INTEGER,
+
         moderator_id INTEGER,
+
         reason TEXT,
+
         date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
     )
     """)
 
     # ==========================
     # MODERATION
     # ==========================
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS moderation_settings (
+
         guild_id INTEGER PRIMARY KEY,
+
         timeout_warns INTEGER DEFAULT 3,
+
         kick_warns INTEGER DEFAULT 5,
+
         ban_warns INTEGER DEFAULT 10
+
     )
     """)
 
     # ==========================
     # AUTOMOD
     # ==========================
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS automod_settings (
+
         guild_id INTEGER PRIMARY KEY,
+
         anti_spam INTEGER DEFAULT 1,
+
         anti_links INTEGER DEFAULT 1,
+
         anti_caps INTEGER DEFAULT 1
+
     )
     """)
 
     # ==========================
     # AUTOMOD WHITELIST
     # ==========================
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS automod_whitelist (
+
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+
         guild_id INTEGER,
+
         user_id INTEGER,
+
         role_id INTEGER
+
     )
     """)
 
     # ==========================
     # BAD WORDS
     # ==========================
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS bad_words (
+
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+
         guild_id INTEGER,
+
         word TEXT
+
     )
     """)
 
     # ==========================
     # TICKETS
     # ==========================
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS ticket_settings (
+
         guild_id INTEGER PRIMARY KEY,
+
         category_id INTEGER,
+
         support_role_id INTEGER,
+
         counter INTEGER DEFAULT 0
+
     )
     """)
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS tickets (
+
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+
         guild_id INTEGER,
+
         channel_id INTEGER,
+
         user_id INTEGER,
+
         status TEXT DEFAULT 'open',
+
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
     )
     """)
 
     # ==========================
     # TEMP ROLES
     # ==========================
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS temp_roles (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -157,6 +236,7 @@ def init_database() -> sqlite3.Connection:
     # ==========================
     # AUTO VOICE CHANNELS
     # ==========================
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS autovoice_settings (
         guild_id INTEGER PRIMARY KEY,
@@ -177,6 +257,7 @@ def init_database() -> sqlite3.Connection:
     # ==========================
     # STATS / MEMBER COUNTER CHANNELS
     # ==========================
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS stats_channels (
         guild_id INTEGER PRIMARY KEY,
@@ -188,6 +269,7 @@ def init_database() -> sqlite3.Connection:
     # ==========================
     # BOOST NOTIFICATIONS
     # ==========================
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS boost_settings (
         guild_id INTEGER PRIMARY KEY,
@@ -196,6 +278,24 @@ def init_database() -> sqlite3.Connection:
     )
     """)
 
+    # ==========================
+    # LEVELS & XP SYSTEM
+    # ==========================
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS user_levels (
+        guild_id INTEGER,
+        user_id INTEGER,
+        xp INTEGER DEFAULT 0,
+        level INTEGER DEFAULT 0,
+        messages INTEGER DEFAULT 0,
+        last_xp_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (guild_id, user_id)
+    )
+    """)
+
     conn.commit()
+
     logger.info("Database initialized successfully.")
+
     return conn

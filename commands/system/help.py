@@ -20,6 +20,7 @@ class Help(BaseCog):
 
         categories = {
             "🎵 Muzyka": [],
+            "⭐ Poziomy & XP": [],
             "🛡️ Moderacja": [],
             "⚙️ Konfiguracja": [],
             "📊 Informacje": [],
@@ -45,6 +46,14 @@ class Help(BaseCog):
                 "leave",
             }:
                 categories["🎵 Muzyka"].append(name)
+
+            elif command.name in {
+                "rank",
+                "leaderboard",
+                "set_level_channel",
+                "add_xp",
+            }:
+                categories["⭐ Poziomy & XP"].append(name)
 
             elif command.name in {
                 "kick",

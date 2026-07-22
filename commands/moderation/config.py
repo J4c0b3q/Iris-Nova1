@@ -42,6 +42,10 @@ class Config(commands.Cog):
                 value="welcome"
             ),
             discord.app_commands.Choice(
+                name="🎉 Kanał poziomów (level-up)",
+                value="level_channel"
+            ),
+            discord.app_commands.Choice(
                 name="🔧 Prefix komend (domyślnie /)",
                 value="prefix"
             )
@@ -161,6 +165,20 @@ class Config(commands.Cog):
                 )
                 message = f"✅ Kanał powitań ustawiony na: {target_channel.mention}"
 
+            elif option == "level_channel":
+                cursor.execute(
+                    """
+                    UPDATE guilds
+                    SET level_channel = ?
+                    WHERE guild_id = ?
+                    """,
+                    (
+                        target_channel.id,
+                        interaction.guild.id
+                    )
+                )
+                message = f"✅ Kanał powiadomień o poziomach (level-up) ustawiony na: {target_channel.mention}"
+
         conn.commit()
         conn.close()
 
@@ -182,7 +200,7 @@ class Config(commands.Cog):
 
         cursor.execute(
             """
-            SELECT log_channel, member_log_channel, moderation_log_channel, message_log_channel, welcome_channel, prefix
+            SELECT log_channel, member_log_channel, moderation_log_channel, message_log_channel, welcome_channel, prefix, level_channel
             FROM guilds
             WHERE guild_id = ?
             """,
@@ -213,6 +231,7 @@ class Config(commands.Cog):
         msg_log = get_ch_mention(data[3])
         welcome_ch = get_ch_mention(data[4])
         prefix = data[5] or PREFIX
+        level_ch = get_ch_mention(data[6])
 
         embed = discord.Embed(
             title="⚙️ Pełna Konfiguracja Iris Nova",
@@ -246,6 +265,12 @@ class Config(commands.Cog):
         embed.add_field(
             name="👋 Kanał Powitań",
             value=welcome_ch,
+            inline=True
+        )
+
+        embed.add_field(
+            name="🎉 Kanał Poziomów",
+            value=level_ch,
             inline=True
         )
 
