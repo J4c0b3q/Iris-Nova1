@@ -30,6 +30,9 @@ class Reload(BaseCog):
 
                 loaded += 1
 
+            except commands.NoEntryPointError:
+                continue
+
             except Exception:
                 failed += 1
                 self.logger.exception(module)

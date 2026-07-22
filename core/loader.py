@@ -1,12 +1,13 @@
 import time
 from pathlib import Path
+from discord.ext import commands
+
 from core.logger import get_logger
 
 logger = get_logger("Loader")
 
 
 async def load_extensions(bot):
-    # Przeszukuj oba katalogi: commands oraz events
     source_dirs = [Path("commands"), Path("events")]
 
     bot.loaded_modules = 0
@@ -19,7 +20,11 @@ async def load_extensions(bot):
             continue
 
         for file in folder.rglob("*.py"):
-            if file.name.startswith("_") or file.name == "__init__.py":
+            if (
+                file.name.startswith("_")
+                or file.name == "__init__.py"
+                or file.name in ["checks.py", "helpers.py", "utils.py", "config.py"]
+            ):
                 continue
 
             module = ".".join(file.with_suffix("").parts)
@@ -30,6 +35,10 @@ async def load_extensions(bot):
                 elapsed = time.perf_counter() - module_start
                 bot.loaded_modules += 1
                 logger.info(f"✓ {module} ({elapsed:.2f}s)")
+
+            except commands.NoEntryPointError:
+                logger.debug(f"Pominięto plik bez funkcji setup: {module}")
+
             except Exception:
                 bot.failed_modules += 1
                 logger.exception(f"✗ Błąd ładowania rozszerzenia {module}")
@@ -37,8 +46,7 @@ async def load_extensions(bot):
     total = time.perf_counter() - start
 
     logger.info("=" * 60)
-    logger.info(f"Załadowano rozszerzeń: {bot.loaded_modules}")
-    if bot.failed_modules > 0:
-        logger.warning(f"Błędy ładowania: {bot.failed_modules}")
-    logger.info(f"Czas ładowania: {total:.2f}s")
+    logger.info(f"Loaded: {bot.loaded_modules}")
+    logger.info(f"Failed: {bot.failed_modules}")
+    logger.info(f"Time: {total:.2f}s")
     logger.info("=" * 60)

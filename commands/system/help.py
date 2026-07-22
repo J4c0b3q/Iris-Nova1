@@ -19,6 +19,7 @@ class Help(BaseCog):
     ):
 
         categories = {
+            "🎵 Muzyka": [],
             "🛡️ Moderacja": [],
             "⚙️ Konfiguracja": [],
             "📊 Informacje": [],
@@ -35,6 +36,17 @@ class Help(BaseCog):
             name = f"`/{command.name}`"
 
             if command.name in {
+                "play",
+                "skip",
+                "pause",
+                "resume",
+                "stop",
+                "queue",
+                "leave",
+            }:
+                categories["🎵 Muzyka"].append(name)
+
+            elif command.name in {
                 "kick",
                 "ban",
                 "clear",

@@ -1,29 +1,49 @@
 import os
 import sqlite3
 from pathlib import Path
+
 from core.logger import get_logger
 
 logger = get_logger(__name__)
 
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
+
 DB_PATH = DATA_DIR / "iris.db"
+
 
 def get_connection() -> sqlite3.Connection:
     return sqlite3.connect(DB_PATH)
 
-def add_column_if_missing(cursor: sqlite3.Cursor, table: str, column: str, column_type: str) -> None:
+
+def add_column_if_missing(
+    cursor: sqlite3.Cursor,
+    table: str,
+    column: str,
+    column_type: str,
+) -> None:
     cursor.execute(f"PRAGMA table_info({table})")
     columns = [row[1] for row in cursor.fetchall()]
+
     if column not in columns:
         logger.info(f"Adding column '{column}' to table '{table}'")
-        cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {column_type}")
+        cursor.execute(
+            f"""
+            ALTER TABLE {table}
+            ADD COLUMN {column} {column_type}
+            """
+        )
+
 
 def init_database() -> sqlite3.Connection:
     logger.info("Initializing database...")
+
     conn = get_connection()
     cursor = conn.cursor()
 
+    # ==========================
+    # GUILDS
+    # ==========================
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS guilds (
         guild_id INTEGER PRIMARY KEY,
@@ -37,6 +57,9 @@ def init_database() -> sqlite3.Connection:
     add_column_if_missing(cursor, "guilds", "moderation_log_channel", "INTEGER")
     add_column_if_missing(cursor, "guilds", "message_log_channel", "INTEGER")
 
+    # ==========================
+    # WARNINGS
+    # ==========================
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS warnings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -48,6 +71,9 @@ def init_database() -> sqlite3.Connection:
     )
     """)
 
+    # ==========================
+    # MODERATION
+    # ==========================
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS moderation_settings (
         guild_id INTEGER PRIMARY KEY,
@@ -57,6 +83,9 @@ def init_database() -> sqlite3.Connection:
     )
     """)
 
+    # ==========================
+    # AUTOMOD
+    # ==========================
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS automod_settings (
         guild_id INTEGER PRIMARY KEY,
@@ -66,6 +95,9 @@ def init_database() -> sqlite3.Connection:
     )
     """)
 
+    # ==========================
+    # AUTOMOD WHITELIST
+    # ==========================
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS automod_whitelist (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -75,6 +107,9 @@ def init_database() -> sqlite3.Connection:
     )
     """)
 
+    # ==========================
+    # BAD WORDS
+    # ==========================
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS bad_words (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -83,7 +118,9 @@ def init_database() -> sqlite3.Connection:
     )
     """)
 
-    # --- SYSTEM TICKETÓW ---
+    # ==========================
+    # TICKETS
+    # ==========================
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS ticket_settings (
         guild_id INTEGER PRIMARY KEY,
@@ -107,7 +144,6 @@ def init_database() -> sqlite3.Connection:
     # ==========================
     # TEMP ROLES
     # ==========================
-
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS temp_roles (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -115,6 +151,48 @@ def init_database() -> sqlite3.Connection:
         user_id INTEGER,
         role_id INTEGER,
         expires_at TIMESTAMP
+    )
+    """)
+
+    # ==========================
+    # AUTO VOICE CHANNELS
+    # ==========================
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS autovoice_settings (
+        guild_id INTEGER PRIMARY KEY,
+        channel_id INTEGER,
+        category_id INTEGER
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS temp_voice_channels (
+        channel_id INTEGER PRIMARY KEY,
+        guild_id INTEGER,
+        owner_id INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # ==========================
+    # STATS / MEMBER COUNTER CHANNELS
+    # ==========================
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS stats_channels (
+        guild_id INTEGER PRIMARY KEY,
+        channel_id INTEGER,
+        channel_format TEXT DEFAULT '👥 Osoby: {count}'
+    )
+    """)
+
+    # ==========================
+    # BOOST NOTIFICATIONS
+    # ==========================
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS boost_settings (
+        guild_id INTEGER PRIMARY KEY,
+        channel_id INTEGER,
+        custom_message TEXT
     )
     """)
 

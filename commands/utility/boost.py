@@ -44,7 +44,7 @@ class Boost(commands.Cog):
             return
 
         description_text = custom_msg or saved_msg or (
-            f"🚀 **Dziękujemy za ulepszenie serwera!**\n\n"
+            f" **Dziękujemy za ulepszenie serwera!**\n\n"
             f"{member.mention} właśnie ulepszył(a) **{guild.name}**! 🎉\n"
             f"Dzięki Tobie serwer rozwija się jeszcze szybciej! ❤️"
         )

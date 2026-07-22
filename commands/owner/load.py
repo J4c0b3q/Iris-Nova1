@@ -29,6 +29,9 @@ class Load(BaseCog):
                 await self.bot.load_extension(module)
                 loaded += 1
 
+            except commands.NoEntryPointError:
+                continue
+
             except Exception:
                 failed += 1
                 self.logger.exception(module)
