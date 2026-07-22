@@ -3,8 +3,6 @@ from discord.ext import commands
 import datetime
 
 from database.database import get_connection
-from core.logger import log_info
-
 
 
 class Warnings(commands.Cog):

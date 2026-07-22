@@ -1,31 +1,40 @@
 from discord.ext import commands
 
-from core.logger import get_logger
+from core.base_cog import BaseCog
 from utils.checks import is_owner
 
-logger = get_logger(__name__)
 
-
-class Unload(commands.Cog):
+class Unload(BaseCog):
 
     def __init__(self, bot):
-        self.bot = bot
+        super().__init__(bot)
 
-    @commands.hybrid_command(name="unload")
+    @commands.hybrid_command(
+        name="unload",
+        description="Wyłącza wybrany moduł."
+    )
     @is_owner()
-    async def unload(self, ctx, module: str):
+    async def unload(
+        self,
+        ctx: commands.Context,
+        module: str,
+    ):
 
         try:
 
             await self.bot.unload_extension(module)
 
-            await ctx.send("✅ Done")
+            await ctx.send(
+                f"✅ Wyłączono `{module}`"
+            )
 
         except Exception:
 
-            logger.exception(module)
+            self.logger.exception(module)
 
-            await ctx.send("❌ Error")
+            await ctx.send(
+                f"❌ Nie udało się wyłączyć `{module}`"
+            )
 
 
 async def setup(bot):
