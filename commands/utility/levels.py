@@ -10,7 +10,7 @@ logger = get_logger("Levels")
 
 
 def get_xp_for_level(level: int) -> int:
-    """Oblicza sumaryczny XP wymagany do osiągnięcia danego poziomu (skalowany progiem)."""
+    """Oblicza sumaryczny XP wymagany do osiągnięcia danego poziomu."""
     if level <= 0:
         return 0
     return int(100 * (level ** 1.5)) + (level * 50)
@@ -27,7 +27,7 @@ def get_level_from_xp(xp: int) -> int:
 class Levels(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        # Cooldown na przyznawanie XP: (guild_id, user_id) -> timestamp
+        # Słownik z czasem ostatnio przyznanego XP: (guild_id, user_id) -> timestamp
         self._cooldowns = {}
 
     def get_user_data(self, guild_id: int, user_id: int):
@@ -117,7 +117,7 @@ class Levels(commands.Cog):
             if channel_id:
                 target_channel = message.guild.get_channel(channel_id)
 
-            # Jeśli dedykowany kanał nie jest ustawiony, powiadom na kanale wysłania wiadomości
+            # Jeśli kanał nie jest ustawiony, powiadom na kanale wiadomości
             if not target_channel:
                 target_channel = message.channel
 

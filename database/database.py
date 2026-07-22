@@ -299,3 +299,96 @@ def init_database() -> sqlite3.Connection:
     logger.info("Database initialized successfully.")
 
     return conn
+
+import sqlite3
+import os
+from core.logger import get_logger
+
+logger = get_logger("Database")
+
+DB_PATH = "database/bot.db"
+
+
+def get_connection():
+    os.makedirs("database", exist_ok=True)
+    return sqlite3.connect(DB_PATH)
+
+
+def column_exists(cursor, table_name, column_name):
+    cursor.execute(f"PRAGMA table_info({table_name})")
+    columns = cursor.fetchall()
+    for col in columns:
+        if col[1] == column_name:
+            return True
+    return False
+
+
+def add_column_if_missing(cursor, table_name, column_name, column_type):
+    if not column_exists(cursor, table_name, column_name):
+        logger.info(f"Adding missing column {column_name} to {table_name}")
+        cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}")
+
+
+def init_db():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # ==========================
+    # GUILDS (SETTINGS)
+    # ==========================
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS guilds (
+        guild_id INTEGER PRIMARY KEY,
+        prefix TEXT DEFAULT '!',
+        welcome_channel INTEGER,
+        log_channel INTEGER,
+        member_log_channel INTEGER,
+        moderation_log_channel INTEGER,
+        message_log_channel INTEGER,
+        auto_role INTEGER,
+        level_channel INTEGER
+    )
+    """)
+
+    # Automatyczne dodawanie brakujących kolumn
+    add_column_if_missing(cursor, "guilds", "member_log_channel", "INTEGER")
+    add_column_if_missing(cursor, "guilds", "moderation_log_channel", "INTEGER")
+    add_column_if_missing(cursor, "guilds", "message_log_channel", "INTEGER")
+    add_column_if_missing(cursor, "guilds", "level_channel", "INTEGER")
+
+    # ==========================
+    # WARNINGS
+    # ==========================
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS warnings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        guild_id INTEGER,
+        user_id INTEGER,
+        moderator_id INTEGER,
+        reason TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # ==========================
+    # LEVELS & XP SYSTEM
+    # ==========================
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS user_levels (
+        guild_id INTEGER,
+        user_id INTEGER,
+        xp INTEGER DEFAULT 0,
+        level INTEGER DEFAULT 0,
+        messages INTEGER DEFAULT 0,
+        last_xp_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (guild_id, user_id)
+    )
+    """)
+
+    conn.commit()
+    conn.close()
+
+    logger.info("Database initialized successfully.")
