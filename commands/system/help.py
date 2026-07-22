@@ -82,7 +82,7 @@ class HelpCommand(commands.Cog):
         embed = discord.Embed(
             title="🌙 Iris Nova — Komendy Bota",
             description=(
-                "Witaj! Oto spisa dostępnych komend podzielony na kategorie.\n"
+                "Witaj! Oto spis dostępnych komend podzielony na kategorie.\n"
                 "Użyj `/help [komenda]` lub `/setup` aby skonfigurować bota."
             ),
             color=discord.Color.purple()
