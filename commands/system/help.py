@@ -1,21 +1,19 @@
 import discord
-
-from core.base_cog import BaseCog
-from core.constants import EMBED_COLOR
+from discord.ext import commands
 
 
-class Help(BaseCog):
+class HelpCommand(commands.Cog):
 
     def __init__(self, bot):
-        super().__init__(bot)
+        self.bot = bot
 
     @discord.app_commands.command(
         name="help",
-        description="Pokazuje wszystkie dostępne komendy."
+        description="Wyświetla listę wszystkich dostępnych komend bota Iris Nova"
     )
     async def help_command(
         self,
-        interaction: discord.Interaction,
+        interaction: discord.Interaction
     ):
 
         categories = {
@@ -24,14 +22,14 @@ class Help(BaseCog):
             "🛡️ Moderacja": [],
             "⚙️ Konfiguracja": [],
             "📊 Informacje": [],
-            "👑 Owner": [],
-            "🤖 System": [],
-            "🔧 Inne": [],
+            "🛠️ Inne / Narzędzia": []
         }
 
-        for command in self.bot.tree.get_commands():
+        all_commands = self.bot.tree.get_commands()
 
-            if command.name == "help":
+        for command in all_commands:
+
+            if command.name in ["reload", "load", "unload"]:
                 continue
 
             name = f"`/{command.name}`"
@@ -78,39 +76,35 @@ class Help(BaseCog):
             }:
                 categories["📊 Informacje"].append(name)
 
-            elif command.name in {
-                "reload",
-                "load",
-                "unload",
-            }:
-                categories["👑 Owner"].append(name)
-
-            elif command.name == "ping":
-                categories["🤖 System"].append(name)
-
             else:
-                categories["🔧 Inne"].append(name)
+                categories["🛠️ Inne / Narzędzia"].append(name)
 
         embed = discord.Embed(
-            title="🌙 Iris Nova",
-            description="Lista dostępnych komend:",
-            color=EMBED_COLOR,
+            title="🌙 Iris Nova — Komendy Bota",
+            description=(
+                "Witaj! Oto spisa dostępnych komend podzielony na kategorie.\n"
+                "Użyj `/help [komenda]` lub `/setup` aby skonfigurować bota."
+            ),
+            color=discord.Color.purple()
         )
 
-        for title, cmds in categories.items():
-            if cmds:
+        for cat_name, cmd_list in categories.items():
+            if cmd_list:
                 embed.add_field(
-                    name=title,
-                    value="\n".join(sorted(cmds)),
-                    inline=False,
+                    name=cat_name,
+                    value=" • ".join(cmd_list),
+                    inline=False
                 )
 
         embed.set_footer(
-            text=f"{len(self.bot.tree.get_commands())} komend"
+            text="🌙 Iris Nova • Twój wielofunkcyjny asystent Discord"
         )
 
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(
+            embed=embed,
+            ephemeral=True
+        )
 
 
 async def setup(bot):
-    await bot.add_cog(Help(bot))
+    await bot.add_cog(HelpCommand(bot))

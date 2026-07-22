@@ -16,6 +16,8 @@ class Reload(BaseCog):
     )
     @is_owner()
     async def reload(self, ctx: commands.Context):
+        # Odroczenie interakcji Discorda, zapobiegające błędowi 10062 Unknown Interaction
+        await ctx.defer()
 
         loaded = 0
         failed = 0

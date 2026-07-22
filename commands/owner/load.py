@@ -16,6 +16,8 @@ class Load(BaseCog):
     )
     @is_owner()
     async def load(self, ctx: commands.Context):
+        # Odroczenie interakcji
+        await ctx.defer()
 
         loaded = 0
         failed = 0

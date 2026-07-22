@@ -19,6 +19,8 @@ class Unload(BaseCog):
         ctx: commands.Context,
         module: str,
     ):
+        # Odroczenie interakcji
+        await ctx.defer()
 
         try:
 
