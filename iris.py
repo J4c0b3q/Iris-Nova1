@@ -1,17 +1,15 @@
 import asyncio
 
-import discord
-from discord.ext import commands
-
-from core.config import BOT_NAME, PREFIX, VERSION
-from database.database import init_database
+from core.bot import IrisBot
+from core.config import BOT_NAME, VERSION
 from core.env import Env
-from core.loader import load_extensions
 from core.logger import get_logger
 
-logger = get_logger("Iris")
+from database.database import init_database
+from database.repositories.guild_repository import GuildRepository
+from database.repositories.warning_repository import WarningRepository
 
-from core.bot import IrisBot
+logger = get_logger("Iris")
 
 bot = IrisBot()
 
@@ -22,20 +20,23 @@ async def on_ready():
     logger.info(f"{BOT_NAME} v{VERSION}")
     logger.info(f"Logged in as: {bot.user} ({bot.user.id})")
     logger.info(f"Guilds: {len(bot.guilds)}")
+    logger.info(f"Users: {sum(g.member_count or 0 for g in bot.guilds)}")
     logger.info("=" * 60)
 
 
 async def main():
     logger.info("Starting Iris...")
 
-    logger.info("Initializing database...")
-    init_database()
+    # Inicjalizacja bazy danych
+    bot.database = init_database()
 
-    logger.info("Loading extensions...")
-    
+    # Repositories
+    bot.guilds_repo = GuildRepository(bot.database)
+    bot.warnings_repo = WarningRepository(bot.database)
+
+    logger.info("Database initialized.")
+
     async with bot:
-        await load_extensions(bot)
-
         logger.info("Connecting to Discord...")
         await bot.start(Env.DISCORD_TOKEN)
 
@@ -45,7 +46,7 @@ if __name__ == "__main__":
         asyncio.run(main())
 
     except KeyboardInterrupt:
-        logger.warning("Bot stopped by user (KeyboardInterrupt).")
+        logger.warning("Bot stopped by user.")
 
     except Exception:
         logger.exception("Fatal error while starting Iris.")
