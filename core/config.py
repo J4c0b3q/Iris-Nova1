@@ -7,6 +7,8 @@ BOT_NAME = "Iris"
 VERSION = "1.0.0"
 PREFIX = "!"
 
+OWNER_ID = 0
+
 SETTINGS = {
     "AI_ENABLED": False,
     "LOGGING_ENABLED": True,
