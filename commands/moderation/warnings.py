@@ -38,7 +38,12 @@ class Warnings(commands.Cog):
         cursor.execute(
             """
             INSERT INTO warnings
-            (guild_id, user_id, moderator_id, reason)
+            (
+                guild_id,
+                user_id,
+                moderator_id,
+                reason
+            )
             VALUES (?, ?, ?, ?)
             """,
             (
@@ -83,7 +88,6 @@ class Warnings(commands.Cog):
 
 
         if not settings:
-
             settings = (
                 3,
                 5,
@@ -104,13 +108,15 @@ class Warnings(commands.Cog):
 
         embed.add_field(
             name="Użytkownik",
-            value=member.mention
+            value=member.mention,
+            inline=False
         )
 
 
         embed.add_field(
             name="Moderator",
-            value=interaction.user.mention
+            value=interaction.user.mention,
+            inline=False
         )
 
 
@@ -123,7 +129,8 @@ class Warnings(commands.Cog):
 
         embed.add_field(
             name="Łącznie ostrzeżeń",
-            value=str(warns)
+            value=str(warns),
+            inline=False
         )
 
 
@@ -132,7 +139,7 @@ class Warnings(commands.Cog):
         )
 
 
-        log_info(
+        self.bot.logger.info(
             f"{interaction.user} ostrzegł {member}: {reason}"
         )
 
@@ -147,32 +154,44 @@ class Warnings(commands.Cog):
         if warns >= ban_warns:
 
             try:
+
                 await member.ban(
                     reason="Iris: limit ostrzeżeń"
                 )
+
 
                 await interaction.followup.send(
                     f"🔨 {member.mention} został zbanowany."
                 )
 
-            except:
-                pass
+
+            except Exception as e:
+
+                self.bot.logger.error(
+                    f"Błąd bana {member}: {e}"
+                )
 
 
 
         elif warns >= kick_warns:
 
             try:
+
                 await member.kick(
                     reason="Iris: limit ostrzeżeń"
                 )
+
 
                 await interaction.followup.send(
                     f"👢 {member.mention} został wyrzucony."
                 )
 
-            except:
-                pass
+
+            except Exception as e:
+
+                self.bot.logger.error(
+                    f"Błąd kicka {member}: {e}"
+                )
 
 
 
@@ -185,7 +204,9 @@ class Warnings(commands.Cog):
                         datetime.timezone.utc
                     )
                     +
-                    datetime.timedelta(minutes=10)
+                    datetime.timedelta(
+                        minutes=10
+                    )
                 )
 
 
@@ -200,8 +221,11 @@ class Warnings(commands.Cog):
                 )
 
 
-            except:
-                pass
+            except Exception as e:
+
+                self.bot.logger.error(
+                    f"Błąd timeout {member}: {e}"
+                )
 
 
 
@@ -327,7 +351,7 @@ class Warnings(commands.Cog):
         )
 
 
-        log_info(
+        self.bot.logger.info(
             f"{interaction.user} usunął ostrzeżenia {member}"
         )
 
