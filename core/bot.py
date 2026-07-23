@@ -49,3 +49,9 @@ class IrisBot(commands.Bot):
             f"Failed {self.failed_modules} modules."
         )
         self.logger.info("=" * 60)
+
+        try:
+            synced = await self.tree.sync()
+            self.logger.info(f"Zsynchronizowano {len(synced)} komend slash z Discord API.")
+        except Exception as e:
+            self.logger.error(f"Błąd podczas synchronizacji komend: {e}")

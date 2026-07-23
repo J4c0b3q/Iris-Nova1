@@ -56,6 +56,28 @@ class Owner(commands.Cog):
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
+    @commands.hybrid_command(
+        name="sync",
+        description="Wymusza synchronizację komend aplikacji z Discord API (dla właściciela)"
+    )
+    async def sync_cmd(self, ctx: commands.Context, guild_only: bool = False):
+        if not await self.check_owner(ctx.author):
+            await ctx.send("❌ Brak dostępu. Ta komenda jest dostępna tylko dla właściciela bota.", ephemeral=True)
+            return
+
+        await ctx.defer(ephemeral=True)
+
+        try:
+            if guild_only and ctx.guild:
+                self.bot.tree.copy_global_to(guild=ctx.guild)
+                synced = await self.bot.tree.sync(guild=ctx.guild)
+                await ctx.send(f"✅ Zsynchronizowano **{len(synced)}** komend natychmiastowo na serwerze `{ctx.guild.name}`!", ephemeral=True)
+            else:
+                synced = await self.bot.tree.sync()
+                await ctx.send(f"✅ Zsynchronizowano **{len(synced)}** komend globalnie w Discord API!", ephemeral=True)
+        except Exception as e:
+            await ctx.send(f"❌ Wystąpił błąd podczas synchronizacji: `{e}`", ephemeral=True)
+
 
 async def setup(bot):
     await bot.add_cog(Owner(bot))
