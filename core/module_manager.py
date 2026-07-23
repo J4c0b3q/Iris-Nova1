@@ -14,7 +14,7 @@ def get_modules() -> list[str]:
         if file.name == "__init__.py":
             continue
 
-        if file.name in ["checks.py", "helpers.py", "utils.py", "config.py"]:
+        if file.name in ["checks.py", "helpers.py", "utils.py"]:  # Usunięto config.py
             continue
 
         modules.append(".".join(file.with_suffix("").parts))

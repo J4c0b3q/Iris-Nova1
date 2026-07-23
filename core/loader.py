@@ -23,7 +23,7 @@ async def load_extensions(bot):
             if (
                 file.name.startswith("_")
                 or file.name == "__init__.py"
-                or file.name in ["checks.py", "helpers.py", "utils.py", "config.py"]
+                or file.name in ["checks.py", "helpers.py", "utils.py"]  # Usunięto config.py
             ):
                 continue
 

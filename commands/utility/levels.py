@@ -141,16 +141,20 @@ class Levels(commands.Cog):
             except Exception as e:
                 logger.error(f"Nie udało się wysłać powiadomienia o level-up: {e}")
 
-    @discord.app_commands.command(
+    @commands.hybrid_command(
         name="rank",
         description="Wyświetla Twój aktualny poziom, XP oraz statystyki na serwerze"
     )
     @discord.app_commands.describe(
         user="Użytkownik, którego poziom chcesz sprawdzić (opcjonalnie)"
     )
-    async def rank(self, interaction: discord.Interaction, user: discord.Member = None):
-        target = user or interaction.user
-        guild_id = interaction.guild.id
+    async def rank(self, ctx: commands.Context, user: discord.Member = None):
+        if not ctx.guild:
+            await ctx.send("❌ Ta komenda może być używana tylko na serwerze.", ephemeral=True)
+            return
+
+        target = user or ctx.author
+        guild_id = ctx.guild.id
 
         data = self.get_user_data(guild_id, target.id)
         current_xp = data["xp"]
@@ -203,14 +207,19 @@ class Levels(commands.Cog):
         )
 
         embed.set_footer(text="🌙 Iris Nova • Pisz wiadomości na serwerze, aby zdobywać kolejne poziomy!")
-        await interaction.response.send_message(embed=embed)
+        await ctx.send(embed=embed)
 
-    @discord.app_commands.command(
+    @commands.hybrid_command(
         name="leaderboard",
+        aliases=["top"],
         description="Wyświetla ranking najaktywniejszych użytkowników na serwerze"
     )
-    async def leaderboard(self, interaction: discord.Interaction):
-        guild_id = interaction.guild.id
+    async def leaderboard(self, ctx: commands.Context):
+        if not ctx.guild:
+            await ctx.send("❌ Ta komenda może być używana tylko na serwerze.", ephemeral=True)
+            return
+
+        guild_id = ctx.guild.id
 
         conn = get_connection()
         cursor = conn.cursor()
@@ -228,7 +237,7 @@ class Levels(commands.Cog):
         conn.close()
 
         if not rows:
-            await interaction.response.send_message(
+            await ctx.send(
                 "📉 Brak danych w rankingu. Zacznijcie pisać wiadomości, aby zdobywać XP!",
                 ephemeral=True,
             )
@@ -238,44 +247,48 @@ class Levels(commands.Cog):
         medals = ["🥇", "🥈", "🥉"]
 
         for idx, (u_id, lvl, xp, msgs) in enumerate(rows, start=1):
-            member = interaction.guild.get_member(u_id)
+            member = ctx.guild.get_member(u_id)
             name = member.mention if member else f"<@{u_id}>"
             icon = medals[idx - 1] if idx <= 3 else f"**{idx}.**"
 
             description += f"{icon} {name} — **Lvl {lvl}** ({xp} XP, {msgs} wiadomości)\n"
 
         embed = discord.Embed(
-            title=f"🏆 Ranking Aktywności — {interaction.guild.name}",
+            title=f"🏆 Ranking Aktywności — {ctx.guild.name}",
             description=description,
             color=discord.Color.gold(),
         )
         embed.set_footer(text="🌙 Iris Nova • Zdobądź więcej XP pisząc na czacie!")
 
-        await interaction.response.send_message(embed=embed)
+        await ctx.send(embed=embed)
 
-    @discord.app_commands.command(
+    @commands.hybrid_command(
         name="set_level_channel",
         description="Ustawia dedykowany kanał dla powiadomień o awansach (level-up)"
     )
     @discord.app_commands.describe(
         channel="Wybierz kanał tekstowy lub pozostaw puste, aby wyczyścić ustawienie"
     )
-    @discord.app_commands.checks.has_permissions(administrator=True)
+    @commands.has_permissions(administrator=True)
     async def set_level_channel(
-        self, interaction: discord.Interaction, channel: discord.TextChannel = None
+        self, ctx: commands.Context, channel: discord.TextChannel = None
     ):
+        if not ctx.guild:
+            await ctx.send("❌ Ta komenda może być używana tylko na serwerze.", ephemeral=True)
+            return
+
         conn = get_connection()
         cursor = conn.cursor()
 
         cursor.execute(
             "INSERT OR IGNORE INTO guilds (guild_id) VALUES (?)",
-            (interaction.guild.id,),
+            (ctx.guild.id,),
         )
 
         ch_id = channel.id if channel else None
         cursor.execute(
             "UPDATE guilds SET level_channel = ? WHERE guild_id = ?",
-            (ch_id, interaction.guild.id),
+            (ch_id, ctx.guild.id),
         )
         conn.commit()
         conn.close()
@@ -285,31 +298,90 @@ class Levels(commands.Cog):
         else:
             msg = "ℹ️ Usunięto dedykowany kanał awansów. Powiadomienia będą wysyłane na bieżącym kanale."
 
-        await interaction.response.send_message(msg, ephemeral=True)
+        await ctx.send(msg, ephemeral=True)
 
-    @discord.app_commands.command(
+    @commands.hybrid_command(
         name="add_xp",
+        aliases=["addxp"],
         description="[Admin] Dodaje Punkty Doświadczenia (XP) wybranemu użytkownikowi"
     )
     @discord.app_commands.describe(
         user="Użytkownik, któremu chcesz dodać XP",
         amount="Ilość XP do dodania"
     )
-    @discord.app_commands.checks.has_permissions(administrator=True)
-    async def add_xp(self, interaction: discord.Interaction, user: discord.Member, amount: int):
-        if amount <= 0:
-            await interaction.response.send_message("❌ Ilość XP musi być większa od 0.", ephemeral=True)
+    @commands.has_permissions(administrator=True)
+    async def add_xp(self, ctx: commands.Context, user: discord.Member, amount: int):
+        if not ctx.guild:
+            await ctx.send("❌ Ta komenda może być używana tylko na serwerze.", ephemeral=True)
             return
 
-        guild_id = interaction.guild.id
+        if amount <= 0:
+            await ctx.send("❌ Ilość XP musi być większa od 0.", ephemeral=True)
+            return
+
+        guild_id = ctx.guild.id
         data = self.get_user_data(guild_id, user.id)
         new_xp = data["xp"] + amount
         new_level = get_level_from_xp(new_xp)
 
         self.save_user_data(guild_id, user.id, new_xp, new_level, data["messages"])
 
-        await interaction.response.send_message(
+        await ctx.send(
             f"✅ Dodano **{amount} XP** dla {user.mention}. Nowy poziom: **{new_level}** ({new_xp} XP).",
+            ephemeral=True
+        )
+
+    @commands.hybrid_command(
+        name="remove_xp",
+        aliases=["removexp", "remove-xp"],
+        description="[Admin] Usuwa Punkty Doświadczenia (XP) wybranemu użytkownikowi"
+    )
+    @discord.app_commands.describe(
+        user="Użytkownik, któremu chcesz usunąć XP",
+        amount="Ilość XP do usunięcia"
+    )
+    @commands.has_permissions(administrator=True)
+    async def remove_xp(self, ctx: commands.Context, user: discord.Member, amount: int):
+        if not ctx.guild:
+            await ctx.send("❌ Ta komenda może być używana tylko na serwerze.", ephemeral=True)
+            return
+
+        if amount <= 0:
+            await ctx.send("❌ Ilość XP musi być większa od 0.", ephemeral=True)
+            return
+
+        guild_id = ctx.guild.id
+        data = self.get_user_data(guild_id, user.id)
+        current_xp = data["xp"]
+        new_xp = max(0, current_xp - amount)
+        new_level = get_level_from_xp(new_xp)
+
+        self.save_user_data(guild_id, user.id, new_xp, new_level, data["messages"])
+
+        await ctx.send(
+            f"✅ Usunięto **{amount} XP** użytkownikowi {user.mention}. Nowy poziom: **{new_level}** ({new_xp} XP).",
+            ephemeral=True
+        )
+
+    @commands.hybrid_command(
+        name="reset_lvl",
+        aliases=["resetlvl", "resetlevel", "reset_level"],
+        description="[Admin] Resetuje poziom oraz XP wybranego użytkownika do 0"
+    )
+    @discord.app_commands.describe(
+        user="Użytkownik, którego poziom chcesz zresetować"
+    )
+    @commands.has_permissions(administrator=True)
+    async def reset_lvl(self, ctx: commands.Context, user: discord.Member):
+        if not ctx.guild:
+            await ctx.send("❌ Ta komenda może być używana tylko na serwerze.", ephemeral=True)
+            return
+
+        guild_id = ctx.guild.id
+        self.save_user_data(guild_id, user.id, 0, 0, 0)
+
+        await ctx.send(
+            f"✅ Zresetowano poziom, XP oraz statystyki użytkownika {user.mention}.",
             ephemeral=True
         )
 

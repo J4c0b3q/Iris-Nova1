@@ -10,7 +10,7 @@ class Config(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @discord.app_commands.command(
+    @commands.hybrid_command(
         name="setup",
         description="Konfiguracja kanałów logów, powitań oraz prefiksu dla serwera Iris"
     )
@@ -51,16 +51,18 @@ class Config(commands.Cog):
             )
         ]
     )
-    @discord.app_commands.checks.has_permissions(
-        administrator=True
-    )
+    @commands.has_permissions(administrator=True)
     async def setup(
         self,
-        interaction: discord.Interaction,
+        ctx: commands.Context,
         option: str,
         channel: discord.TextChannel = None,
         new_prefix: str = None
     ):
+        if not ctx.guild:
+            await ctx.send("❌ Ta komenda może być używana tylko na serwerze.", ephemeral=True)
+            return
+
         conn = get_connection()
         cursor = conn.cursor()
 
@@ -71,7 +73,7 @@ class Config(commands.Cog):
             VALUES (?)
             """,
             (
-                interaction.guild.id,
+                ctx.guild.id,
             )
         )
 
@@ -85,40 +87,14 @@ class Config(commands.Cog):
                 """,
                 (
                     prefix_to_set,
-                    interaction.guild.id
+                    ctx.guild.id
                 )
             )
-            message = f"✅ Prefix komend dla serwera został ustawiony na: `{prefix_to_set}`"
-
+            message = f"✅ Prefix komend został zmieniony na: `{prefix_to_set}`"
         else:
-            if not channel:
-                await interaction.response.send_message(
-                    "❌ Musisz wybrać kanał tekstowy dla tej opcji!",
-                    ephemeral=True
-                )
-                conn.close()
-                return
+            target_channel = channel or ctx.channel
 
-            target_channel = channel
-
-            if option == "logs":
-                cursor.execute(
-                    """
-                    UPDATE guilds
-                    SET log_channel = ?, member_log_channel = ?, moderation_log_channel = ?, message_log_channel = ?
-                    WHERE guild_id = ?
-                    """,
-                    (
-                        target_channel.id,
-                        target_channel.id,
-                        target_channel.id,
-                        target_channel.id,
-                        interaction.guild.id
-                    )
-                )
-                message = f"✅ Wszystkie kanały logów ustawione na: {target_channel.mention}"
-
-            elif option == "member_logs":
+            if option == "member_logs":
                 cursor.execute(
                     """
                     UPDATE guilds
@@ -127,7 +103,7 @@ class Config(commands.Cog):
                     """,
                     (
                         target_channel.id,
-                        interaction.guild.id
+                        ctx.guild.id
                     )
                 )
                 message = f"✅ Kanał logów członków ustawiony na: {target_channel.mention}"
@@ -141,7 +117,7 @@ class Config(commands.Cog):
                     """,
                     (
                         target_channel.id,
-                        interaction.guild.id
+                        ctx.guild.id
                     )
                 )
                 message = f"✅ Kanał logów moderacji ustawiony na: {target_channel.mention}"
@@ -155,10 +131,27 @@ class Config(commands.Cog):
                     """,
                     (
                         target_channel.id,
-                        interaction.guild.id
+                        ctx.guild.id
                     )
                 )
                 message = f"✅ Kanał logów wiadomości ustawiony na: {target_channel.mention}"
+
+            elif option == "logs":
+                cursor.execute(
+                    """
+                    UPDATE guilds
+                    SET log_channel = ?, member_log_channel = ?, moderation_log_channel = ?, message_log_channel = ?
+                    WHERE guild_id = ?
+                    """,
+                    (
+                        target_channel.id,
+                        target_channel.id,
+                        target_channel.id,
+                        target_channel.id,
+                        ctx.guild.id
+                    )
+                )
+                message = f"✅ Główny kanał logów (wszystkie rodzaje) ustawiony na: {target_channel.mention}"
 
             elif option == "welcome":
                 cursor.execute(
@@ -169,7 +162,7 @@ class Config(commands.Cog):
                     """,
                     (
                         target_channel.id,
-                        interaction.guild.id
+                        ctx.guild.id
                     )
                 )
                 message = f"✅ Kanał powitań ustawiony na: {target_channel.mention}"
@@ -183,7 +176,7 @@ class Config(commands.Cog):
                     """,
                     (
                         target_channel.id,
-                        interaction.guild.id
+                        ctx.guild.id
                     )
                 )
                 message = f"✅ Kanał powiadomień o poziomach (level-up) ustawiony na: {target_channel.mention}"
@@ -191,19 +184,24 @@ class Config(commands.Cog):
         conn.commit()
         conn.close()
 
-        await interaction.response.send_message(
+        await ctx.send(
             message,
             ephemeral=True
         )
 
-    @discord.app_commands.command(
+    @commands.hybrid_command(
         name="config",
         description="Pokazuje pełną konfigurację kanałów oraz ustawień Iris"
     )
+    @commands.has_permissions(administrator=True)
     async def config(
         self,
-        interaction: discord.Interaction
+        ctx: commands.Context
     ):
+        if not ctx.guild:
+            await ctx.send("❌ Ta komenda może być używana tylko na serwerze.", ephemeral=True)
+            return
+
         conn = get_connection()
         cursor = conn.cursor()
 
@@ -214,7 +212,7 @@ class Config(commands.Cog):
             WHERE guild_id = ?
             """,
             (
-                interaction.guild.id,
+                ctx.guild.id,
             )
         )
 
@@ -222,7 +220,7 @@ class Config(commands.Cog):
         conn.close()
 
         if not data:
-            await interaction.response.send_message(
+            await ctx.send(
                 "⚠️ Ten serwer nie ma jeszcze skonfigurowanych kanałów. Użyj `/setup` aby je ustawić.",
                 ephemeral=True
             )
@@ -230,20 +228,20 @@ class Config(commands.Cog):
 
         def get_ch_mention(ch_id):
             if not ch_id:
-                return "`Niekonsfigurowany`"
-            ch = interaction.guild.get_channel(ch_id)
-            return ch.mention if ch else f"<#{ch_id}>"
+                return "Nie ustawiono"
+            ch = ctx.guild.get_channel(ch_id)
+            return ch.mention if ch else "Nie odnaleziono kanału"
 
-        member_log = get_ch_mention(data[1] or data[0])
-        mod_log = get_ch_mention(data[2] or data[0])
-        msg_log = get_ch_mention(data[3] or data[0])
+        main_log = get_ch_mention(data[0])
+        member_log = get_ch_mention(data[1])
+        mod_log = get_ch_mention(data[2])
+        msg_log = get_ch_mention(data[3])
         welcome_ch = get_ch_mention(data[4])
         prefix = data[5] or PREFIX
         level_ch = get_ch_mention(data[6])
 
         embed = discord.Embed(
             title="⚙️ Pełna Konfiguracja Iris Nova",
-            description=f"Oto aktualny stan konfiguracji dla serwera **{interaction.guild.name}**:",
             color=discord.Color.blue()
         )
 
@@ -266,6 +264,12 @@ class Config(commands.Cog):
         )
 
         embed.add_field(
+            name="📝 Główny Log (Fallback)",
+            value=main_log,
+            inline=True
+        )
+
+        embed.add_field(
             name="👋 Kanał Powitań",
             value=welcome_ch,
             inline=True
@@ -284,14 +288,15 @@ class Config(commands.Cog):
         )
 
         embed.set_footer(
-            text="🌙 Iris Nova • Użyj /setup aby zmienić te ustawienia"
+            text="🌙 Iris Nova • Użyj /setup aby zmienić ustawienia"
         )
 
-        await interaction.response.send_message(
-            embed=embed,
-            ephemeral=True
+        await ctx.send(
+            embed=embed
         )
 
 
 async def setup(bot):
-    await bot.add_cog(Config(bot))
+    await bot.add_cog(
+        Config(bot)
+    )
