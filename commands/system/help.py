@@ -80,6 +80,10 @@ class Help(BaseCog):
                 "temprole",
                 "automod",
                 "automod_config",
+                "say",
+                "ogloszenie",
+                "embed",
+                "sendmsg",
             }:
                 categories["🛡️ Moderacja"].append(name)
 
