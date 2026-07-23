@@ -101,6 +101,8 @@ class Help(BaseCog):
                 "tickets",
                 "voice",
                 "auto_voice",
+                "reactionrole",
+                "rr",
             }:
                 categories["⚙️ Konfiguracja"].append(name)
 

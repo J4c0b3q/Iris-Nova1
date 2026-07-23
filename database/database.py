@@ -294,6 +294,21 @@ def init_database() -> sqlite3.Connection:
     )
     """)
 
+    # ==========================
+    # REACTION ROLES
+    # ==========================
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS reaction_roles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        guild_id INTEGER,
+        channel_id INTEGER,
+        message_id INTEGER,
+        emoji TEXT,
+        role_id INTEGER
+    )
+    """)
+
     conn.commit()
 
     logger.info("Database initialized successfully.")

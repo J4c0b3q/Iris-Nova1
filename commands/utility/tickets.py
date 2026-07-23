@@ -33,7 +33,7 @@ class BaseTicketView(discord.ui.View):
 
 class TicketCreateView(BaseTicketView):
     @discord.ui.button(
-        label="📩 Stwórz Ticket",
+        label="Stwórz Ticket",
         style=discord.ButtonStyle.primary,
         custom_id="ticket_create_btn",
         emoji="📩"
@@ -208,7 +208,7 @@ class TicketCreateView(BaseTicketView):
 
 class TicketControlView(BaseTicketView):
     @discord.ui.button(
-        label="🔒 Zamknij Ticket",
+        label="Zamknij Ticket",
         style=discord.ButtonStyle.danger,
         custom_id="ticket_close_btn",
         emoji="🔒"
@@ -275,7 +275,7 @@ class TicketControlView(BaseTicketView):
                 pass
 
     @discord.ui.button(
-        label="➕ Dodaj osobę",
+        label="Dodaj osobę",
         style=discord.ButtonStyle.secondary,
         custom_id="ticket_add_user_btn",
         emoji="➕"
@@ -292,7 +292,7 @@ class TicketControlView(BaseTicketView):
 
 class TicketClosedControlView(BaseTicketView):
     @discord.ui.button(
-        label="🗑️ Usuń Ticket",
+        label="Usuń Ticket",
         style=discord.ButtonStyle.danger,
         custom_id="ticket_delete_btn",
         emoji="🗑️"
@@ -306,7 +306,7 @@ class TicketClosedControlView(BaseTicketView):
             logger.exception(f"Błąd przy usuwaniu ticketu: {e}")
 
     @discord.ui.button(
-        label="🔓 Otwórz Ponownie",
+        label="Otwórz Ponownie",
         style=discord.ButtonStyle.success,
         custom_id="ticket_reopen_btn",
         emoji="🔓"
