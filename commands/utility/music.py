@@ -29,7 +29,7 @@ YTDL_OPTIONS = {
     },
     'extractor_args': {
         'youtube': {
-            'player_client': ['android', 'mweb', 'web_embedded'],
+            'player_client': ['ios', 'android', 'mweb'],
         }
     }
 }
@@ -225,6 +225,22 @@ class Music(commands.Cog):
                         "4️⃣ **Zrestartuj bota**: Po wgraniu nowych ciasteczek zrestartuj proces bota, aby wczytał nowy plik cookies."
                     ),
                     color=discord.Color.orange()
+                )
+                await interaction.followup.send(embed=help_embed)
+            elif "format" in error_msg.lower() or "not available" in error_msg.lower():
+                help_embed = discord.Embed(
+                    title="⚠️ Format niedostępny (Requested format is not available)",
+                    description=(
+                        "Ten błąd zazwyczaj oznacza, że YouTube blokuje wybrane formaty audio dla tego klienta lub adresu IP chmury (Oracle VPS).\n\n"
+                        "**Jak to naprawić:**\n"
+                        "1️⃣ **Zaktualizuj `yt-dlp`**: Sprawdź, czy masz najnowszą wersję biblioteki `yt-dlp` na swoim serwerze Oracle VPS, ponieważ stare wersje nie wspierają klienta iOS:\n"
+                        "```bash\n"
+                        "pip install -U yt-dlp\n"
+                        "```\n"
+                        "2️⃣ **Wgraj świeży plik cookies**: Niektóre formaty i piosenki (np. z ograniczeniami wiekowymi lub wysoce chronione) wymagają zalogowania. Wyeksportuj ciasteczka (cookies.txt) z zalogowanej przeglądarki i wgraj je do `/home/ubuntu/Iris-Nova1/cookies.txt`.\n"
+                        "3️⃣ **Zrestartuj bota**: Zrestartuj bota, aby wczytał nowe ciasteczka i zaktualizowaną konfigurację."
+                    ),
+                    color=discord.Color.red()
                 )
                 await interaction.followup.send(embed=help_embed)
             else:
