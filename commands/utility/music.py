@@ -7,7 +7,7 @@ from core.logger import get_logger
 
 logger = get_logger("Music")
 
-# Opcje wyszukiwania i pobierania pobierania dźwięku z YT/Audio
+# Opcje wyszukiwania i pobierania dźwięku z innych platform (np. SoundCloud, Bandcamp)
 YTDL_OPTIONS = {
     'format': 'bestaudio/best',
     'extractaudio': True,
@@ -26,65 +26,8 @@ YTDL_OPTIONS = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
         'Accept-Language': 'pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7',
-    },
-    'extractor_args': {
-        'youtube': {
-            'player_client': ['ios', 'android', 'mweb'],
-        }
     }
 }
-
-# Sprawdź, czy istnieje plik z ciasteczkami youtube (np. cookies.txt)
-def find_cookie_file():
-    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    search_dirs = [
-        os.getcwd(),
-        project_root,
-        '/home/ubuntu/Iris-Nova1',
-        os.path.expanduser('~')
-    ]
-    
-    # Remove duplicates preserving order
-    seen = set()
-    search_dirs = [x for x in search_dirs if not (x in seen or seen.add(x))]
-    
-    # 1. First search for standard exact names
-    standard_names = ['cookies.txt', 'Cookies.txt', 'youtube-cookies.txt', 'cookies.netscape.txt']
-    for directory in search_dirs:
-        if not os.path.exists(directory):
-            continue
-        for name in standard_names:
-            full_path = os.path.abspath(os.path.join(directory, name))
-            if os.path.exists(full_path) and os.path.isfile(full_path):
-                return full_path
-                
-    # 2. If not found, scan directories for anything containing "cookie" (case-insensitive)
-    for directory in search_dirs:
-        if not os.path.exists(directory):
-            continue
-        try:
-            for entry in os.listdir(directory):
-                entry_lower = entry.lower()
-                if "cookie" in entry_lower and entry_lower.endswith((".txt", ".netscape")):
-                    full_path = os.path.abspath(os.path.join(directory, entry))
-                    if os.path.isfile(full_path):
-                        return full_path
-        except Exception:
-            continue
-            
-    return None
-
-cookie_path = find_cookie_file()
-if cookie_path:
-    file_size = os.path.getsize(cookie_path)
-    YTDL_OPTIONS['cookiefile'] = cookie_path
-    logger.info(f"🍪 Załadowano plik cookies z: '{cookie_path}' (Rozmiar: {file_size} bajtów)")
-else:
-    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    logger.warning("⚠️ Nie znaleziono żadnego pliku z ciasteczkami youtube (cookies.txt). Szukano w:")
-    logger.warning(f"  - {os.path.abspath('cookies.txt')}")
-    logger.warning(f"  - {os.path.abspath(os.path.join(project_root, 'cookies.txt'))}")
-    logger.warning(f"  - /home/ubuntu/Iris-Nova1/cookies.txt")
 
 FFMPEG_OPTIONS = {
     'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
@@ -99,7 +42,6 @@ def get_ffmpeg_path():
     ffmpeg_env = os.getenv("FFMPEG_PATH", "")
     
     if ffmpeg_env:
-        # Jeśli podana ścieżka jest katalogiem, spróbuj znaleźć plik wykonywalny w środku
         if os.path.isdir(ffmpeg_env):
             for name in ["ffmpeg.exe", "ffmpeg"]:
                 full_path = os.path.join(ffmpeg_env, name)
@@ -175,12 +117,20 @@ class Music(commands.Cog):
                     self.bot.loop
                 )
 
+
     @discord.app_commands.command(
         name="play",
-        description="Odtwarza muzykę z YouTube lub wyszukuje piosenkę"
+        description="Odtwarza muzykę ze SoundCloud, Bandcamp, Twitch lub innych alternatywnych serwisów"
     )
-    @discord.app_commands.describe(query="Nazwa utworu lub link do YouTube")
-    async def play(self, interaction: discord.Interaction, query: str):
+    @discord.app_commands.describe(
+        query="Nazwa utworu, bezpośredni link (SoundCloud, Bandcamp itp.) lub link do streamu",
+        source="Serwis do wyszukiwania utworu, jeśli nie podano pełnego linku"
+    )
+    @discord.app_commands.choices(source=[
+        discord.app_commands.Choice(name="SoundCloud ☁️", value="scsearch"),
+        discord.app_commands.Choice(name="Bandcamp 🎸", value="bcsearch")
+    ])
+    async def play(self, interaction: discord.Interaction, query: str, source: discord.app_commands.Choice[str] = None):
         if not interaction.user.voice:
             await interaction.response.send_message(
                 "❌ Musisz znajdować się na kanale głosowym, aby włączyć muzykę!",
@@ -203,48 +153,26 @@ class Music(commands.Cog):
         elif voice_client.channel != voice_channel:
             await voice_client.move_to(voice_channel)
 
+        # Jeśli to nie jest bezpośredni URL, zastosuj odpowiedni prefiks wyszukiwania (domyślnie SoundCloud)
+        is_url = query.startswith("http://") or query.startswith("https://")
+        if not is_url:
+            search_prefix = source.value if source else "scsearch"
+            # Zabezpieczenie, aby nie dodawać podwójnie prefiksów
+            if not any(query.startswith(prefix) for prefix in ["scsearch:", "bcsearch:", "soundgasm:"]):
+                query = f"{search_prefix}:{query}"
+        else:
+            # Sprawdzenie i zablokowanie linków do YouTube, jeśli użytkownik mimo wszystko wklei taki link
+            if "youtube.com" in query.lower() or "youtu.be" in query.lower():
+                await interaction.followup.send(
+                    "❌ Odtwarzanie z serwisu YouTube zostało wyłączone na tym botie. "
+                    "Wklej link z SoundCloud, Bandcamp lub wyszukaj wpisując samą nazwę piosenki."
+                )
+                return
+
         try:
             player = await YTDLSource.from_url(query, loop=self.bot.loop, stream=True)
         except Exception as e:
-            error_msg = str(e)
-            if "confirm you" in error_msg.lower() or "not a bot" in error_msg.lower() or "sign in" in error_msg.lower():
-                help_embed = discord.Embed(
-                    title="⚠️ Wykryto bota (Sign in to confirm you're not a bot)",
-                    description=(
-                        "Adresy IP dostawców chmurowych (takich jak Oracle Cloud, AWS, DigitalOcean) są agresywnie blokowane przez YouTube.\n\n"
-                        "**Jak to naprawić na swoim serwerze Oracle:**\n"
-                        "1️⃣ **Zaktualizuj `yt-dlp`**: Upewnij się, że masz najnowszą wersję `yt-dlp`. Połącz się przez SSH z serwerem Oracle i wpisz:\n"
-                        "```bash\n"
-                        "pip install -U yt-dlp\n"
-                        "```\n"
-                        "2️⃣ **Odśwież plik ciasteczek**: Wyeksportuj nowe ciasteczka YouTube z przeglądarki i wgraj je do `/home/ubuntu/Iris-Nova1/cookies.txt` (stare ciasteczka po jakimś czasie wygasają).\n"
-                        "3️⃣ **Wgraj plik cookies**: Użyj programu do SFTP (np. WinSCP / FileZilla) lub otwórz edytor w konsoli i wklej zawartość:\n"
-                        "```bash\n"
-                        "nano /home/ubuntu/Iris-Nova1/cookies.txt\n"
-                        "```\n"
-                        "4️⃣ **Zrestartuj bota**: Po wgraniu nowych ciasteczek zrestartuj proces bota, aby wczytał nowy plik cookies."
-                    ),
-                    color=discord.Color.orange()
-                )
-                await interaction.followup.send(embed=help_embed)
-            elif "format" in error_msg.lower() or "not available" in error_msg.lower():
-                help_embed = discord.Embed(
-                    title="⚠️ Format niedostępny (Requested format is not available)",
-                    description=(
-                        "Ten błąd zazwyczaj oznacza, że YouTube blokuje wybrane formaty audio dla tego klienta lub adresu IP chmury (Oracle VPS).\n\n"
-                        "**Jak to naprawić:**\n"
-                        "1️⃣ **Zaktualizuj `yt-dlp`**: Sprawdź, czy masz najnowszą wersję biblioteki `yt-dlp` na swoim serwerze Oracle VPS, ponieważ stare wersje nie wspierają klienta iOS:\n"
-                        "```bash\n"
-                        "pip install -U yt-dlp\n"
-                        "```\n"
-                        "2️⃣ **Wgraj świeży plik cookies**: Niektóre formaty i piosenki (np. z ograniczeniami wiekowymi lub wysoce chronione) wymagają zalogowania. Wyeksportuj ciasteczka (cookies.txt) z zalogowanej przeglądarki i wgraj je do `/home/ubuntu/Iris-Nova1/cookies.txt`.\n"
-                        "3️⃣ **Zrestartuj bota**: Zrestartuj bota, aby wczytał nowe ciasteczka i zaktualizowaną konfigurację."
-                    ),
-                    color=discord.Color.red()
-                )
-                await interaction.followup.send(embed=help_embed)
-            else:
-                await interaction.followup.send(f"❌ Błąd podczas pobierania utworu: {e}")
+            await interaction.followup.send(f"❌ Błąd podczas pobierania lub odtwarzania utworu: {e}")
             return
 
         queue = self.get_queue(interaction.guild.id)
