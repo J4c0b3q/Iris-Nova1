@@ -58,9 +58,15 @@ class Owner(commands.Cog):
 
     @commands.hybrid_command(
         name="sync",
-        description="Wymusza synchronizację komend aplikacji z Discord API (dla właściciela)"
+        description="Wymusza synchronizację lub czyszczenie komend aplikacji (dla właściciela)"
     )
-    async def sync_cmd(self, ctx: commands.Context, guild_only: bool = False):
+    async def sync_cmd(
+        self,
+        ctx: commands.Context,
+        guild_only: bool = False,
+        clear_guild: bool = False,
+        clear_all_guilds: bool = False
+    ):
         if not await self.check_owner(ctx.author):
             await ctx.send("❌ Brak dostępu. Ta komenda jest dostępna tylko dla właściciela bota.", ephemeral=True)
             return
@@ -68,7 +74,25 @@ class Owner(commands.Cog):
         await ctx.defer(ephemeral=True)
 
         try:
-            if guild_only and ctx.guild:
+            if clear_all_guilds:
+                cleared_count = 0
+                for guild in self.bot.guilds:
+                    self.bot.tree.clear_commands(guild=guild)
+                    await self.bot.tree.sync(guild=guild)
+                    cleared_count += 1
+                
+                # Zsynchronizuj komendy globalnie, aby były w pełni aktualne
+                synced = await self.bot.tree.sync()
+                await ctx.send(
+                    f"🧹 Pomyślnie wyczyszczono komendy lokalne na wszystkich **{cleared_count}** serwerach! "
+                    f"Zsynchronizowano też **{len(synced)}** komend globalnie.",
+                    ephemeral=True
+                )
+            elif clear_guild and ctx.guild:
+                self.bot.tree.clear_commands(guild=ctx.guild)
+                await self.bot.tree.sync(guild=ctx.guild)
+                await ctx.send(f"🧹 Pomyślnie wyczyszczono komendy lokalne serwera `{ctx.guild.name}`! Powinny teraz wyświetlać się tylko komendy globalne.", ephemeral=True)
+            elif guild_only and ctx.guild:
                 self.bot.tree.copy_global_to(guild=ctx.guild)
                 synced = await self.bot.tree.sync(guild=ctx.guild)
                 await ctx.send(f"✅ Zsynchronizowano **{len(synced)}** komend natychmiastowo na serwerze `{ctx.guild.name}`!", ephemeral=True)
