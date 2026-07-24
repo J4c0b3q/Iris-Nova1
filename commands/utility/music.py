@@ -30,27 +30,56 @@ YTDL_OPTIONS = {
 }
 
 # Sprawdź, czy istnieje plik z ciasteczkami youtube (np. cookies.txt)
-project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-possible_cookie_paths = [
-    'cookies.txt',
-    os.path.join(project_root, 'cookies.txt'),
-    '/home/ubuntu/Iris-Nova1/cookies.txt'
-]
+def find_cookie_file():
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    search_dirs = [
+        os.getcwd(),
+        project_root,
+        '/home/ubuntu/Iris-Nova1',
+        os.path.expanduser('~')
+    ]
+    
+    # Remove duplicates preserving order
+    seen = set()
+    search_dirs = [x for x in search_dirs if not (x in seen or seen.add(x))]
+    
+    # 1. First search for standard exact names
+    standard_names = ['cookies.txt', 'Cookies.txt', 'youtube-cookies.txt', 'cookies.netscape.txt']
+    for directory in search_dirs:
+        if not os.path.exists(directory):
+            continue
+        for name in standard_names:
+            full_path = os.path.abspath(os.path.join(directory, name))
+            if os.path.exists(full_path) and os.path.isfile(full_path):
+                return full_path
+                
+    # 2. If not found, scan directories for anything containing "cookie" (case-insensitive)
+    for directory in search_dirs:
+        if not os.path.exists(directory):
+            continue
+        try:
+            for entry in os.listdir(directory):
+                entry_lower = entry.lower()
+                if "cookie" in entry_lower and entry_lower.endswith((".txt", ".netscape")):
+                    full_path = os.path.abspath(os.path.join(directory, entry))
+                    if os.path.isfile(full_path):
+                        return full_path
+        except Exception:
+            continue
+            
+    return None
 
-cookies_found = False
-for path in possible_cookie_paths:
-    abs_path = os.path.abspath(path)
-    if os.path.exists(abs_path):
-        file_size = os.path.getsize(abs_path)
-        YTDL_OPTIONS['cookiefile'] = abs_path
-        cookies_found = True
-        logger.info(f"🍪 Załadowano plik cookies z: '{abs_path}' (Rozmiar: {file_size} bajtów)")
-        break
-
-if not cookies_found:
+cookie_path = find_cookie_file()
+if cookie_path:
+    file_size = os.path.getsize(cookie_path)
+    YTDL_OPTIONS['cookiefile'] = cookie_path
+    logger.info(f"🍪 Załadowano plik cookies z: '{cookie_path}' (Rozmiar: {file_size} bajtów)")
+else:
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     logger.warning("⚠️ Nie znaleziono żadnego pliku z ciasteczkami youtube (cookies.txt). Szukano w:")
-    for path in possible_cookie_paths:
-        logger.warning(f"  - {os.path.abspath(path)}")
+    logger.warning(f"  - {os.path.abspath('cookies.txt')}")
+    logger.warning(f"  - {os.path.abspath(os.path.join(project_root, 'cookies.txt'))}")
+    logger.warning(f"  - /home/ubuntu/Iris-Nova1/cookies.txt")
 
 FFMPEG_OPTIONS = {
     'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
