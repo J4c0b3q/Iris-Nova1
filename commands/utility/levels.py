@@ -112,14 +112,12 @@ class Levels(commands.Cog):
         # Awans na nowy poziom!
         if new_level > current_level:
             channel_id = self.get_level_channel_id(guild_id)
-            target_channel = None
+            if not channel_id:
+                return
 
-            if channel_id:
-                target_channel = message.guild.get_channel(channel_id)
-
-            # Jeśli kanał nie jest ustawiony, powiadom na kanale wiadomości
+            target_channel = message.guild.get_channel(channel_id)
             if not target_channel:
-                target_channel = message.channel
+                return
 
             try:
                 xp_for_next = get_xp_for_level(new_level + 1)
@@ -296,9 +294,39 @@ class Levels(commands.Cog):
         if channel:
             msg = f"✅ Dedykowany kanał awansów został ustawiony na {channel.mention}!"
         else:
-            msg = "ℹ️ Usunięto dedykowany kanał awansów. Powiadomienia będą wysyłane na bieżącym kanale."
+            msg = "ℹ️ Usunięto dedykowany kanał awansów. Powiadomienia o awansach zostały wyłączone."
 
         await ctx.send(msg, ephemeral=True)
+
+    @commands.hybrid_command(
+        name="remove_level_channel",
+        description="Usuwa ustawienie dedykowanego kanału dla powiadomień o awansach"
+    )
+    @commands.has_permissions(administrator=True)
+    async def remove_level_channel(self, ctx: commands.Context):
+        if not ctx.guild:
+            await ctx.send("❌ Ta komenda może być używana tylko na serwerze.", ephemeral=True)
+            return
+
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "INSERT OR IGNORE INTO guilds (guild_id) VALUES (?)",
+            (ctx.guild.id,),
+        )
+
+        cursor.execute(
+            "UPDATE guilds SET level_channel = NULL WHERE guild_id = ?",
+            (ctx.guild.id,),
+        )
+        conn.commit()
+        conn.close()
+
+        await ctx.send(
+            "ℹ️ Usunięto dedykowany kanał awansów. Powiadomienia o awansach zostały wyłączone.",
+            ephemeral=True
+        )
 
     @commands.hybrid_command(
         name="add_xp",
