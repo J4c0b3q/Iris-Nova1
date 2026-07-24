@@ -29,7 +29,7 @@ YTDL_OPTIONS = {
     },
     'extractor_args': {
         'youtube': {
-            'player_client': ['ios', 'android'],
+            'player_client': ['android', 'ios'],
         }
     }
 }
