@@ -22,9 +22,14 @@ YTDL_OPTIONS = {
     'no_warnings': True,
     'default_search': 'auto',
     'source_address': '0.0.0.0',
+    'http_headers': {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7',
+    },
     'extractor_args': {
         'youtube': {
-            'player_client': ['web_creator', 'android', 'ios', 'mweb'],
+            'player_client': ['ios', 'android'],
         }
     }
 }
@@ -201,7 +206,29 @@ class Music(commands.Cog):
         try:
             player = await YTDLSource.from_url(query, loop=self.bot.loop, stream=True)
         except Exception as e:
-            await interaction.followup.send(f"❌ Błąd podczas pobierania utworu: {e}")
+            error_msg = str(e)
+            if "confirm you" in error_msg.lower() or "not a bot" in error_msg.lower() or "sign in" in error_msg.lower():
+                help_embed = discord.Embed(
+                    title="⚠️ Wykryto bota (Sign in to confirm you're not a bot)",
+                    description=(
+                        "Adresy IP dostawców chmurowych (takich jak Oracle Cloud, AWS, DigitalOcean) są agresywnie blokowane przez YouTube.\n\n"
+                        "**Jak to naprawić na swoim serwerze Oracle:**\n"
+                        "1️⃣ **Zaktualizuj `yt-dlp`**: Upewnij się, że masz najnowszą wersję `yt-dlp`. Połącz się przez SSH z serwerem Oracle i wpisz:\n"
+                        "```bash\n"
+                        "pip install -U yt-dlp\n"
+                        "```\n"
+                        "2️⃣ **Odśwież plik ciasteczek**: Wyeksportuj nowe ciasteczka YouTube z przeglądarki i wgraj je do `/home/ubuntu/Iris-Nova1/cookies.txt` (stare ciasteczka po jakimś czasie wygasają).\n"
+                        "3️⃣ **Wgraj plik cookies**: Użyj programu do SFTP (np. WinSCP / FileZilla) lub otwórz edytor w konsoli i wklej zawartość:\n"
+                        "```bash\n"
+                        "nano /home/ubuntu/Iris-Nova1/cookies.txt\n"
+                        "```\n"
+                        "4️⃣ **Zrestartuj bota**: Po wgraniu nowych ciasteczek zrestartuj proces bota, aby wczytał nowy plik cookies."
+                    ),
+                    color=discord.Color.orange()
+                )
+                await interaction.followup.send(embed=help_embed)
+            else:
+                await interaction.followup.send(f"❌ Błąd podczas pobierania utworu: {e}")
             return
 
         queue = self.get_queue(interaction.guild.id)
