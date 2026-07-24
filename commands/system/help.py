@@ -65,6 +65,7 @@ class Help(BaseCog):
                 "leaderboard",
                 "top",
                 "set_level_channel",
+                "remove_level_channel",
                 "add_xp",
                 "remove_xp",
                 "reset_lvl",
