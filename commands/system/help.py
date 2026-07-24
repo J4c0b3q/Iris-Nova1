@@ -85,6 +85,9 @@ class Help(BaseCog):
                 "ogloszenie",
                 "embed",
                 "sendmsg",
+                "unwarn",
+                "warns",
+                "clearwarns",    
             }:
                 categories["🛡️ Moderacja"].append(name)
 
@@ -123,6 +126,7 @@ class Help(BaseCog):
                 "unload",
                 "eval",
                 "sync",
+                "ownerstats",
             }:
                 categories["👑 Owner"].append(name)
 
