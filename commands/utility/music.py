@@ -1,8 +1,10 @@
 import asyncio
+import os
 import discord
 from discord.ext import commands
 import yt_dlp
 
+# Opcje wyszukiwania i pobierania pobierania dźwięku z YT/Audio
 YTDL_OPTIONS = {
     'format': 'bestaudio/best',
     'extractaudio': True,
@@ -17,7 +19,18 @@ YTDL_OPTIONS = {
     'no_warnings': True,
     'default_search': 'auto',
     'source_address': '0.0.0.0',
+    'extractor_args': {
+        'youtube': {
+            'player_client': ['ios', 'android', 'mweb'],
+        }
+    }
 }
+
+# Sprawdź, czy istnieje plik z ciasteczkami youtube (np. cookies.txt)
+if os.path.exists('cookies.txt'):
+    YTDL_OPTIONS['cookiefile'] = 'cookies.txt'
+elif os.path.exists('/home/ubuntu/Iris-Nova1/cookies.txt'):
+    YTDL_OPTIONS['cookiefile'] = '/home/ubuntu/Iris-Nova1/cookies.txt'
 
 FFMPEG_OPTIONS = {
     'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
@@ -43,6 +56,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
         )
 
         if 'entries' in data:
+            # Pobierz pierwszy wynik w przypadku wyszukiwania frazy
             data = data['entries'][0]
 
         filename = data['url'] if stream else ytdl.prepare_filename(data)
@@ -52,7 +66,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
 class Music(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.queues = {}
+        self.queues = {}  # {guild_id: [YTDLSource]}
 
     def get_queue(self, guild_id: int):
         if guild_id not in self.queues:
@@ -97,6 +111,7 @@ class Music(commands.Cog):
 
         await interaction.response.defer()
 
+        # Połącz z kanałem głosowym, jeśli bot tam jeszcze nie przebywa
         if not voice_client:
             try:
                 voice_client = await voice_channel.connect()
