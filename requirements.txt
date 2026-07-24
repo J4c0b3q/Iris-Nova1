@@ -1,0 +1,6 @@
+discord.py[voice]
+python-dotenv
+colorlog
+openai
+yt-dlp
+PyNaCl
