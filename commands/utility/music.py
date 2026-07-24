@@ -3,6 +3,9 @@ import os
 import discord
 from discord.ext import commands
 import yt_dlp
+from core.logger import get_logger
+
+logger = get_logger("Music")
 
 # Opcje wyszukiwania i pobierania pobierania dźwięku z YT/Audio
 YTDL_OPTIONS = {
@@ -21,16 +24,33 @@ YTDL_OPTIONS = {
     'source_address': '0.0.0.0',
     'extractor_args': {
         'youtube': {
-            'player_client': ['ios', 'android', 'mweb'],
+            'player_client': ['web_creator', 'android', 'ios', 'mweb'],
         }
     }
 }
 
 # Sprawdź, czy istnieje plik z ciasteczkami youtube (np. cookies.txt)
-if os.path.exists('cookies.txt'):
-    YTDL_OPTIONS['cookiefile'] = 'cookies.txt'
-elif os.path.exists('/home/ubuntu/Iris-Nova1/cookies.txt'):
-    YTDL_OPTIONS['cookiefile'] = '/home/ubuntu/Iris-Nova1/cookies.txt'
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+possible_cookie_paths = [
+    'cookies.txt',
+    os.path.join(project_root, 'cookies.txt'),
+    '/home/ubuntu/Iris-Nova1/cookies.txt'
+]
+
+cookies_found = False
+for path in possible_cookie_paths:
+    abs_path = os.path.abspath(path)
+    if os.path.exists(abs_path):
+        file_size = os.path.getsize(abs_path)
+        YTDL_OPTIONS['cookiefile'] = abs_path
+        cookies_found = True
+        logger.info(f"🍪 Załadowano plik cookies z: '{abs_path}' (Rozmiar: {file_size} bajtów)")
+        break
+
+if not cookies_found:
+    logger.warning("⚠️ Nie znaleziono żadnego pliku z ciasteczkami youtube (cookies.txt). Szukano w:")
+    for path in possible_cookie_paths:
+        logger.warning(f"  - {os.path.abspath(path)}")
 
 FFMPEG_OPTIONS = {
     'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
@@ -38,6 +58,33 @@ FFMPEG_OPTIONS = {
 }
 
 ytdl = yt_dlp.YoutubeDL(YTDL_OPTIONS)
+
+
+def get_ffmpeg_path():
+    import shutil
+    ffmpeg_env = os.getenv("FFMPEG_PATH", "")
+    
+    if ffmpeg_env:
+        # Jeśli podana ścieżka jest katalogiem, spróbuj znaleźć plik wykonywalny w środku
+        if os.path.isdir(ffmpeg_env):
+            for name in ["ffmpeg.exe", "ffmpeg"]:
+                full_path = os.path.join(ffmpeg_env, name)
+                if os.path.exists(full_path) and os.path.isfile(full_path):
+                    logger.info(f"⚙️ FFMPEG_PATH wskazuje na katalog. Automatycznie wybrano plik: {full_path}")
+                    return full_path
+            logger.warning(f"⚠️ FFMPEG_PATH wskazuje na katalog '{ffmpeg_env}', ale nie znaleziono w nim pliku 'ffmpeg.exe' ani 'ffmpeg'.")
+        else:
+            if os.path.exists(ffmpeg_env) and os.path.isfile(ffmpeg_env):
+                return ffmpeg_env
+            logger.warning(f"⚠️ Plik FFMPEG_PATH '{ffmpeg_env}' nie istnieje lub nie jest poprawnym plikiem.")
+
+    # Próba znalezienia w zmiennych środowiskowych systemowych (PATH)
+    system_ffmpeg = shutil.which("ffmpeg")
+    if system_ffmpeg:
+        return system_ffmpeg
+
+    # Domyślny fallback
+    return "ffmpeg"
 
 
 class YTDLSource(discord.PCMVolumeTransformer):
@@ -60,7 +107,8 @@ class YTDLSource(discord.PCMVolumeTransformer):
             data = data['entries'][0]
 
         filename = data['url'] if stream else ytdl.prepare_filename(data)
-        return cls(discord.FFmpegPCMAudio(filename, **FFMPEG_OPTIONS), data=data)
+        ffmpeg_path = get_ffmpeg_path()
+        return cls(discord.FFmpegPCMAudio(filename, executable=ffmpeg_path, **FFMPEG_OPTIONS), data=data)
 
 
 class Music(commands.Cog):
