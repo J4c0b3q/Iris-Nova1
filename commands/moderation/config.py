@@ -46,6 +46,10 @@ class Config(commands.Cog):
                 value="level_channel"
             ),
             discord.app_commands.Choice(
+                name="🔊 Logi głosowe (dołączenia / opuszczenia / streamy)",
+                value="voice_logs"
+            ),
+            discord.app_commands.Choice(
                 name="🔧 Prefix komend (domyślnie /)",
                 value="prefix"
             )
@@ -181,6 +185,20 @@ class Config(commands.Cog):
                 )
                 message = f"✅ Kanał powiadomień o poziomach (level-up) ustawiony na: {target_channel.mention}"
 
+            elif option == "voice_logs":
+                cursor.execute(
+                    """
+                    UPDATE guilds
+                    SET voice_log_channel = ?
+                    WHERE guild_id = ?
+                    """,
+                    (
+                        target_channel.id,
+                        ctx.guild.id
+                    )
+                )
+                message = f"✅ Kanał logów głosowych ustawiony na: {target_channel.mention}"
+
         conn.commit()
         conn.close()
 
@@ -207,7 +225,7 @@ class Config(commands.Cog):
 
         cursor.execute(
             """
-            SELECT log_channel, member_log_channel, moderation_log_channel, message_log_channel, welcome_channel, prefix, level_channel
+            SELECT log_channel, member_log_channel, moderation_log_channel, message_log_channel, welcome_channel, prefix, level_channel, voice_log_channel
             FROM guilds
             WHERE guild_id = ?
             """,
@@ -239,6 +257,7 @@ class Config(commands.Cog):
         welcome_ch = get_ch_mention(data[4])
         prefix = data[5] or PREFIX
         level_ch = get_ch_mention(data[6])
+        voice_ch = get_ch_mention(data[7])
 
         embed = discord.Embed(
             title="⚙️ Pełna Konfiguracja Iris Nova",
@@ -260,6 +279,12 @@ class Config(commands.Cog):
         embed.add_field(
             name="💬 Logi Wiadomości",
             value=msg_log,
+            inline=True
+        )
+
+        embed.add_field(
+            name="🔊 Logi Głosowe",
+            value=voice_ch,
             inline=True
         )
 

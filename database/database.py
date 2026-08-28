@@ -91,6 +91,13 @@ def init_database() -> sqlite3.Connection:
         "INTEGER",
     )
 
+    add_column_if_missing(
+        cursor,
+        "guilds",
+        "voice_log_channel",
+        "INTEGER",
+    )
+
     # ==========================
     # WARNINGS
     # ==========================
@@ -310,7 +317,6 @@ def init_database() -> sqlite3.Connection:
     """)
 
     conn.commit()
-
     logger.info("Database initialized successfully.")
 
     return conn
