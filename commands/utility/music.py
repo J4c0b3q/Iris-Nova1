@@ -84,7 +84,25 @@ class YTDLSource(discord.PCMVolumeTransformer):
 
         filename = data['url'] if stream else ytdl.prepare_filename(data)
         ffmpeg_path = get_ffmpeg_path()
-        return cls(discord.FFmpegPCMAudio(filename, executable=ffmpeg_path, **FFMPEG_OPTIONS), data=data)
+
+        # Pobieramy zalecane nagłówki HTTP wygenerowane przez yt_dlp dla tego utworu
+        http_headers = data.get('http_headers') or {}
+        
+        # Upewniamy się, że mamy prawidłowy User-Agent
+        if 'User-Agent' not in http_headers:
+            http_headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+
+        # Tworzymy ciąg nagłówków rozdzielonych CRLF (\r\n) wymagany przez FFmpeg
+        headers_str = "".join(f"{k}: {v}\r\n" for k, v in http_headers.items())
+
+        # Klonujemy bazowe ustawienia i dodajemy dynamiczne nagłówki do before_options
+        instance_ffmpeg_options = FFMPEG_OPTIONS.copy()
+        instance_ffmpeg_options['before_options'] = (
+            f'-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 '
+            f'-headers "{headers_str}"'
+        )
+
+        return cls(discord.FFmpegPCMAudio(filename, executable=ffmpeg_path, **instance_ffmpeg_options), data=data)
 
 
 class Music(commands.Cog):
@@ -116,7 +134,6 @@ class Music(commands.Cog):
                     ),
                     self.bot.loop
                 )
-
 
     @discord.app_commands.command(
         name="play",
