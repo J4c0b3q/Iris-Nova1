@@ -33,7 +33,7 @@ class BaseTicketView(discord.ui.View):
 
 class TicketCreateView(BaseTicketView):
     @discord.ui.button(
-        label="Stwórz Ticket",
+        label="📩 Stwórz Ticket",
         style=discord.ButtonStyle.primary,
         custom_id="ticket_create_btn",
         emoji="📩"
@@ -58,7 +58,7 @@ class TicketCreateView(BaseTicketView):
             # Pobranie ustawień ticketów dla serwera
             cursor.execute(
                 """
-                SELECT category_id, support_role_id, counter
+                SELECT category_id, support_role_id, counter, support_role_ids
                 FROM ticket_settings
                 WHERE guild_id = ?
                 """,
@@ -69,6 +69,7 @@ class TicketCreateView(BaseTicketView):
             category_id = settings[0] if settings else None
             support_role_id = settings[1] if settings else None
             counter = (settings[2] if settings else 0) + 1
+            support_role_ids_str = settings[3] if settings and len(settings) > 3 else None
 
             # Sprawdzenie czy użytkownik nie ma już otwartego ticketu
             cursor.execute(
@@ -104,9 +105,25 @@ class TicketCreateView(BaseTicketView):
             conn.commit()
 
             category = guild.get_channel(category_id) if category_id else None
-            support_role = guild.get_role(support_role_id) if support_role_id else None
 
-            # Account bota w gildii
+            # Pobranie wszystkich ról wsparcia (nowy oraz stary format dla kompatybilności)
+            support_roles = []
+            if support_role_ids_str:
+                try:
+                    role_ids = [int(rid.strip()) for rid in support_role_ids_str.split(",") if rid.strip()]
+                    for r_id in role_ids:
+                        role = guild.get_role(r_id)
+                        if role and role not in support_roles:
+                            support_roles.append(role)
+                except Exception as ex:
+                    logger.error(f"Błąd parsowania support_role_ids_str '{support_role_ids_str}': {ex}")
+
+            if not support_roles and support_role_id:
+                role = guild.get_role(support_role_id)
+                if role:
+                    support_roles.append(role)
+
+            # Pobieranie konta bota w gildii
             bot_member = guild.me
             if not bot_member:
                 try:
@@ -135,8 +152,8 @@ class TicketCreateView(BaseTicketView):
                     manage_permissions=True
                 )
 
-            if support_role:
-                overwrites[support_role] = discord.PermissionOverwrite(
+            for role in support_roles:
+                overwrites[role] = discord.PermissionOverwrite(
                     view_channel=True,
                     send_messages=True,
                     read_message_history=True,
@@ -170,6 +187,7 @@ class TicketCreateView(BaseTicketView):
             conn.commit()
             conn.close()
 
+            # Powiadomienie na kanale ticketu
             embed = discord.Embed(
                 title=f"🎫 Ticket #{counter:04d}",
                 description=(
@@ -182,8 +200,8 @@ class TicketCreateView(BaseTicketView):
             embed.set_footer(text="🌙 Iris Nova • System Ticketów")
 
             content = f"{user.mention}"
-            if support_role:
-                content += f" | {support_role.mention}"
+            if support_roles:
+                content += " | " + " ".join(role.mention for role in support_roles)
 
             await ticket_channel.send(
                 content=content,
@@ -208,7 +226,7 @@ class TicketCreateView(BaseTicketView):
 
 class TicketControlView(BaseTicketView):
     @discord.ui.button(
-        label="Zamknij Ticket",
+        label="🔒 Zamknij Ticket",
         style=discord.ButtonStyle.danger,
         custom_id="ticket_close_btn",
         emoji="🔒"
@@ -275,7 +293,7 @@ class TicketControlView(BaseTicketView):
                 pass
 
     @discord.ui.button(
-        label="Dodaj osobę",
+        label="➕ Dodaj osobę",
         style=discord.ButtonStyle.secondary,
         custom_id="ticket_add_user_btn",
         emoji="➕"
@@ -292,7 +310,7 @@ class TicketControlView(BaseTicketView):
 
 class TicketClosedControlView(BaseTicketView):
     @discord.ui.button(
-        label="Usuń Ticket",
+        label="🗑️ Usuń Ticket",
         style=discord.ButtonStyle.danger,
         custom_id="ticket_delete_btn",
         emoji="🗑️"
@@ -306,7 +324,7 @@ class TicketClosedControlView(BaseTicketView):
             logger.exception(f"Błąd przy usuwaniu ticketu: {e}")
 
     @discord.ui.button(
-        label="Otwórz Ponownie",
+        label="🔓 Otwórz Ponownie",
         style=discord.ButtonStyle.success,
         custom_id="ticket_reopen_btn",
         emoji="🔓"
@@ -379,7 +397,11 @@ class Tickets(commands.Cog):
     @app_commands.describe(
         channel="Kanał, na którym ma pojawić się panel ticketów",
         category="Kategoria, w której będą tworzyć się kanały ticketów",
-        support_role="Rola uprawniona do obsługi i zamykania ticketów"
+        support_role="Pierwsza rola uprawniona do obsługi i zamykania ticketów",
+        support_role_2="Druga rola uprawniona do obsługi (opcjonalnie)",
+        support_role_3="Trzecia rola uprawniona do obsługi (opcjonalnie)",
+        support_role_4="Czwarta rola uprawniona do obsługi (opcjonalnie)",
+        support_role_5="Piąta rola uprawniona do obsługi (opcjonalnie)"
     )
     @app_commands.checks.has_permissions(administrator=True)
     async def panel(
@@ -387,7 +409,11 @@ class Tickets(commands.Cog):
         interaction: discord.Interaction,
         channel: discord.TextChannel = None,
         category: discord.CategoryChannel = None,
-        support_role: discord.Role = None
+        support_role: discord.Role = None,
+        support_role_2: discord.Role = None,
+        support_role_3: discord.Role = None,
+        support_role_4: discord.Role = None,
+        support_role_5: discord.Role = None
     ):
         try:
             await interaction.response.defer(ephemeral=True)
@@ -400,18 +426,46 @@ class Tickets(commands.Cog):
             conn = get_connection()
             cursor = conn.cursor()
 
+            # Pobieramy obecne ustawienia, aby zachować wartości, których użytkownik nie podał
             cursor.execute(
                 """
-                INSERT INTO ticket_settings (guild_id, category_id, support_role_id)
-                VALUES (?, ?, ?)
+                SELECT category_id, support_role_id, support_role_ids
+                FROM ticket_settings
+                WHERE guild_id = ?
+                """,
+                (interaction.guild.id,)
+            )
+            existing = cursor.fetchone()
+
+            final_category_id = category.id if category else (existing[0] if existing else None)
+
+            # Zbieramy wszystkie podane role wsparcia
+            roles_list = [
+                r for r in [support_role, support_role_2, support_role_3, support_role_4, support_role_5]
+                if r is not None
+            ]
+
+            if roles_list:
+                final_support_role_id = roles_list[0].id
+                final_support_role_ids = ",".join(str(r.id) for r in roles_list)
+            else:
+                final_support_role_id = existing[1] if existing else None
+                final_support_role_ids = existing[2] if existing else None
+
+            cursor.execute(
+                """
+                INSERT INTO ticket_settings (guild_id, category_id, support_role_id, support_role_ids)
+                VALUES (?, ?, ?, ?)
                 ON CONFLICT(guild_id) DO UPDATE SET
-                    category_id = COALESCE(excluded.category_id, ticket_settings.category_id),
-                    support_role_id = COALESCE(excluded.support_role_id, ticket_settings.support_role_id)
+                    category_id = EXCLUDED.category_id,
+                    support_role_id = EXCLUDED.support_role_id,
+                    support_role_ids = EXCLUDED.support_role_ids
                 """,
                 (
                     interaction.guild.id,
-                    category.id if category else None,
-                    support_role.id if support_role else None
+                    final_category_id,
+                    final_support_role_id,
+                    final_support_role_ids
                 )
             )
             conn.commit()

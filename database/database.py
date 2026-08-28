@@ -208,6 +208,13 @@ def init_database() -> sqlite3.Connection:
     )
     """)
 
+    add_column_if_missing(
+        cursor,
+        "ticket_settings",
+        "support_role_ids",
+        "TEXT",
+    )
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS tickets (
 
