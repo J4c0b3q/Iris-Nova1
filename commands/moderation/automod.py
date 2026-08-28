@@ -317,7 +317,10 @@ class AutoMod(BaseCog):
 
         if anti_links:
 
-            if any(
+            # Ignorujemy gify z popularnych serwisów (Tenor, Giphy) oraz bezpośrednie linki do plików .gif
+            is_gif = any(gif_indicator in content for gif_indicator in ["tenor.com", "tenor.co", "giphy.com", ".gif"])
+
+            if not is_gif and any(
                 link in content
                 for link in self.BLOCKED_LINKS
             ):
