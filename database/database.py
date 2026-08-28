@@ -316,7 +316,21 @@ def init_database() -> sqlite3.Connection:
     )
     """)
 
+    # ==========================
+    # STICKY ROLES (Persistent roles)
+    # ==========================
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS sticky_roles (
+        guild_id INTEGER,
+        user_id INTEGER,
+        roles TEXT,
+        PRIMARY KEY (guild_id, user_id)
+    )
+    """)
+
     conn.commit()
+
     logger.info("Database initialized successfully.")
 
     return conn
