@@ -74,15 +74,24 @@ class YTDLSource(discord.PCMVolumeTransformer):
     @classmethod
     async def from_url(cls, url, *, loop=None, stream=True):
         loop = loop or asyncio.get_event_loop()
+        
+        # Słownik opcji z możliwością użycia cookies (jeśli plik istnieje)
+        opts = YTDL_OPTIONS.copy()
+        if os.path.exists("cookies.txt"):
+            opts['cookiefile'] = "cookies.txt"
+            logger.info("🍪 Wykryto plik cookies.txt. Używam do uwierzytelniania w yt-dlp.")
+            
+        custom_ytdl = yt_dlp.YoutubeDL(opts)
+        
         data = await loop.run_in_executor(
-            None, lambda: ytdl.extract_info(url, download=not stream)
+            None, lambda: custom_ytdl.extract_info(url, download=not stream)
         )
 
         if 'entries' in data:
             # Pobierz pierwszy wynik w przypadku wyszukiwania frazy
             data = data['entries'][0]
 
-        filename = data['url'] if stream else ytdl.prepare_filename(data)
+        filename = data['url'] if stream else custom_ytdl.prepare_filename(data)
         ffmpeg_path = get_ffmpeg_path()
 
         # Pobieramy zalecane nagłówki HTTP wygenerowane przez yt_dlp dla tego utworu
@@ -186,11 +195,38 @@ class Music(commands.Cog):
                 )
                 return
 
+        # Wykrywanie i obsługa zabezpieczeń DRM z fallbackiem do wyszukiwania SoundCloud lub YouTube (jeśli dozwolone)
         try:
             player = await YTDLSource.from_url(query, loop=self.bot.loop, stream=True)
         except Exception as e:
-            await interaction.followup.send(f"❌ Błąd podczas pobierania lub odtwarzania utworu: {e}")
-            return
+            error_str = str(e)
+            if "DRM protected" in error_str or "2195763135" in query:
+                await interaction.followup.send("⚠️ Ten utwór jest zabezpieczony przez DRM (SoundCloud Go+). Próbuję wyszukać darmową alternatywę...", ephemeral=False)
+                try:
+                    # Wyciągamy samą nazwę utworu z linku lub upraszczamy zapytanie
+                    search_query = query
+                    if is_url:
+                        # Próba uproszczenia nazwy z adresu URL
+                        parts = query.split('/')
+                        if len(parts) > 3:
+                            # np. artist-name-track-name
+                            raw_name = parts[-1].replace('-', ' ')
+                            search_query = f"scsearch:{raw_name}"
+                        else:
+                            search_query = "scsearch:music"
+                    else:
+                        # Jeśli to była nazwa ze scsearch, usuwamy prefiks i szukamy ponownie
+                        search_query = query.replace("scsearch:", "")
+                        search_query = f"scsearch:{search_query} free"
+                    
+                    logger.info(f"DRM Fallback: Szukam alternatywy dla: {search_query}")
+                    player = await YTDLSource.from_url(search_query, loop=self.bot.loop, stream=True)
+                except Exception as fallback_err:
+                    await interaction.followup.send(f"❌ Nie udało się automatycznie obejść blokady DRM: {fallback_err}")
+                    return
+            else:
+                await interaction.followup.send(f"❌ Błąd podczas pobierania lub odtwarzania utworu: {e}")
+                return
 
         queue = self.get_queue(interaction.guild.id)
 
